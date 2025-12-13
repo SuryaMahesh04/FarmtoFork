@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, Navigation, Clock, Activity, MapPin } from 'lucide-react';
+import { Truck, Navigation, Clock, Activity, MapPin, CheckCircle2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import MetricCard from '../../components/ui/MetricCard';
@@ -27,14 +27,14 @@ const TransporterDashboard = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <MetricCard title="Active Shipments" value={14} icon={Truck} trend={5} color="sage" delay={0.1} />
-                    <MetricCard title="Completed" value={452} icon={CheckCircle} trend={15} color="sky" delay={0.2} />
+                    <MetricCard title="Completed" value={452} icon={CheckCircle2} trend={15} color="sky" delay={0.2} />
                     <MetricCard title="Total Distance (km)" value={12500} icon={Navigation} trend={8} color="wheat" delay={0.3} />
                     <MetricCard title="Fleet Health" value={92} icon={Activity} trend={-1} color="terra" delay={0.4} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 animate-in" style={{ animationDelay: '0.2s' }}>
-                        <ChartCard title="Delivery Performance" subtitle="Completed deliveries vs Time">
+                        <ChartCard title="Delivery Performance" subtitle="Completed deliveries vs Time" height={300}>
                             <LineChart data={seasonalTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <XAxis dataKey="name" {...chartTheme.axis} />
                                 <YAxis {...chartTheme.axis} />
@@ -44,7 +44,7 @@ const TransporterDashboard = () => {
                         </ChartCard>
                     </div>
                     <div className="animate-in" style={{ animationDelay: '0.3s' }}>
-                        <ChartCard title="Vehicle Utilization" subtitle="Fleet status distribution">
+                        <ChartCard title="Vehicle Utilization" subtitle="Fleet status distribution" height={300}>
                             <PieChart>
                                 <Pie data={vehicleUtilizationData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                                     {vehicleUtilizationData.map((entry, index) => (
@@ -53,7 +53,7 @@ const TransporterDashboard = () => {
                                 </Pie>
                                 <Tooltip {...chartTheme.tooltip} />
                             </PieChart>
-                            <div className="flex justify-center flex-wrap gap-4 mt-[-20px]">
+                            <div className="flex justify-center flex-wrap gap-4 mt-2">
                                 {vehicleUtilizationData.map(d => (
                                     <div key={d.name} className="flex items-center gap-2 text-xs text-slate-500">
                                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></span>
@@ -73,7 +73,5 @@ const TransporterDashboard = () => {
         </DashboardLayout>
     );
 };
-// Helper for missing icon imports
-const CheckCircle = ({ size, className }) => <Clock size={size} className={className} />;
 
 export default TransporterDashboard;

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ScrollToTop from './components/layout/ScrollToTop';
 import Landing from './pages/Landing';
 import FarmerOnboarding from './components/forms/farmer/FarmerOnboarding';
 import TransporterOnboarding from './components/forms/transporter/TransporterOnboarding';
@@ -22,6 +23,7 @@ import TraceProduct from './pages/consumer/TraceProduct';
 function App() {
     return (
         <Router>
+            <ScrollToTop />
             <div className="min-h-screen relative overflow-hidden">
                 <Routes>
                     <Route path="/" element={<Landing />} />

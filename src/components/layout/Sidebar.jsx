@@ -35,7 +35,7 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                 return [
                     { icon: LayoutDashboard, label: 'Dashboard', path: '/transporter' },
                     { icon: Truck, label: 'Shipments', path: '/transporter/shipments' },
-                    { icon: Map, label: 'Routes', path: '/transporter/routes' },
+                    { icon: MapPin, label: 'Routes', path: '/transporter/routes' },
                     ...common
                 ];
             case 'distributor':

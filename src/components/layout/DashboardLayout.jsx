@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import MobileLayout from './MobileLayout';
+import useMediaQuery from '../../utils/useMediaQuery';
 
 const DashboardLayout = ({ children, role }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const isMobile = useMediaQuery('(max-width: 768px)');
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
+    // Render mobile layout for small screens
+    if (isMobile) {
+        return <MobileLayout role={role}>{children}</MobileLayout>;
+    }
+
+    // Render desktop layout for larger screens
     return (
         <div className="min-h-screen bg-sage-50 flex flex-col">
             <Header toggleSidebar={toggleSidebar} role={role} />
