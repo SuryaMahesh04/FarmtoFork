@@ -15,9 +15,24 @@ import Analytics from './pages/farmer/Analytics';
 import Settings from './pages/farmer/Settings';
 
 import TransporterDashboard from './pages/transporter/TransporterDashboard';
+import TransporterShipments from './pages/transporter/Shipments';
+import TransporterRoutes from './pages/transporter/Routes';
+import TransporterSettings from './pages/transporter/Settings';
+import ShipmentDetail from './pages/transporter/ShipmentDetail';
 import DistributorDashboard from './pages/distributor/DistributorDashboard';
+import DistributorInventory from './pages/distributor/Inventory';
+import DistributorIncoming from './pages/distributor/Incoming';
+import DistributorQuality from './pages/distributor/Quality';
+import DistributorSettings from './pages/distributor/Settings';
 import RetailerDashboard from './pages/retailer/RetailerDashboard';
+import RetailerProducts from './pages/retailer/Products';
+import RetailerSales from './pages/retailer/Sales';
+import RetailerSettings from './pages/retailer/Settings';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/Users';
+import AdminApprovals from './pages/admin/Approvals';
+import AdminPlatformStats from './pages/admin/PlatformStats';
+import AdminSettings from './pages/admin/Settings';
 import TraceProduct from './pages/consumer/TraceProduct';
 
 function App() {
@@ -44,9 +59,27 @@ function App() {
                     <Route path="/farmer/batch/:batchId" element={<BatchDetail />} />
 
                     <Route path="/transporter" element={<TransporterDashboard />} />
+                    <Route path="/transporter/shipments" element={<TransporterShipments />} />
+                    <Route path="/transporter/routes" element={<TransporterRoutes />} />
+                    <Route path="/transporter/settings" element={<TransporterSettings />} />
+                    <Route path="/transporter/shipment/:shipmentId" element={<ShipmentDetail />} />
+
                     <Route path="/distributor" element={<DistributorDashboard />} />
+                    <Route path="/distributor/inventory" element={<DistributorInventory />} />
+                    <Route path="/distributor/incoming" element={<DistributorIncoming />} />
+                    <Route path="/distributor/quality" element={<DistributorQuality />} />
+                    <Route path="/distributor/settings" element={<DistributorSettings />} />
+
                     <Route path="/retailer" element={<RetailerDashboard />} />
+                    <Route path="/retailer/products" element={<RetailerProducts />} />
+                    <Route path="/retailer/sales" element={<RetailerSales />} />
+                    <Route path="/retailer/settings" element={<RetailerSettings />} />
+
                     <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/users" element={<AdminUsers />} />
+                    <Route path="/admin/approvals" element={<AdminApprovals />} />
+                    <Route path="/admin/stats" element={<AdminPlatformStats />} />
+                    <Route path="/admin/settings" element={<AdminSettings />} />
 
                     {/* Public Trace Route */}
                     <Route path="/trace/:batchId" element={<TraceProduct />} />
