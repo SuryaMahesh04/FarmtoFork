@@ -12,7 +12,8 @@ import {
     FileText,
     Sprout,
     LogOut,
-    X
+    X,
+    MapPin
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
