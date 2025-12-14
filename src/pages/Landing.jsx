@@ -11,9 +11,7 @@ const Landing = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const isMobile = useMediaQuery('(max-width: 768px)');
     const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-    const [currentTestimonial, setCurrentTestimonial] = useState(0);
     const [faqSearch, setFaqSearch] = useState('');
-    const [isPaused, setIsPaused] = useState(false);
 
     // Cursor tracking
     React.useEffect(() => {
@@ -23,23 +21,6 @@ const Landing = () => {
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
-
-    // Testimonials carousel auto-rotate
-    React.useEffect(() => {
-        if (isPaused) return;
-        const interval = setInterval(() => {
-            setCurrentTestimonial(prev => (prev + 1) % 5);
-        }, 5000);
-        return () => clearInterval(interval);
-    }, [isPaused]);
-
-    const testimonials = [
-        { name: 'Ravi Kumar', role: 'Farmer, Punjab', text: 'Farm2Fork gave me direct access to buyers. I get fair prices and instant payments through smart contracts. Game changer!', rating: 5, avatar: '🧑‍🌾' },
-        { name: 'Sarah Mitchell', role: 'Consumer, Mumbai', text: 'I can finally see where my food comes from! Scanning the QR code shows me everything from the farm to my local store.', rating: 5, avatar: '👩' },
-        { name: 'Green Logistics Co.', role: 'Transporter', text: 'The fleet tracking and automated documentation saves us hours every day. Our delivery efficiency increased by 40%.', rating: 5, avatar: '🚛' },
-        { name: 'Kumar Distributors', role: 'Distributor, Delhi', text: 'Inventory management became a breeze. Real-time updates help us reduce waste and optimize storage.', rating: 5, avatar: '📦' },
-        { name: 'FreshMart Retail', role: 'Retailer, Bangalore', text: 'Our customers love the transparency! They can verify every product. Sales increased by 25% since joining.', rating: 5, avatar: '🏪' }
-    ];
 
     const faqs = [
         { q: 'What is Farm2Fork?', a: 'Farm2Fork is a blockchain-based agriculture supply chain platform that enables complete transparency from farm to consumer. Every transaction is recorded on an immutable ledger.', icon: '🌾' },
@@ -256,79 +237,8 @@ const Landing = () => {
                 />
             )}
 
-            {/* Partner Organizations - Simple and Easy to Update */}
-            <div className="bg-slate-50 py-12 md:py-20">
-                <div className="container mx-auto px-4 md:px-6">
-                    <div className="text-center mb-12">
-                        <h3 className="text-2xl md:text-3xl font-display font-bold text-slate-900 mb-3">Trusted by Leading Organizations</h3>
-                        <p className="text-slate-600 text-sm md:text-base">Join thousands of verified stakeholders in the agriculture supply chain</p>
-                    </div>
 
-                    {/* Partner Logos Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8 max-w-6xl mx-auto">
-                        {[
-                            { name: 'Farmer Co-op Network', icon: '🌾' },
-                            { name: 'Agricultural Board', icon: '🏛️' },
-                            { name: 'Organic Certified', icon: '✓' },
-                            { name: 'Quality Standards', icon: '⭐' },
-                            { name: 'Logistics Partners', icon: '🚛' },
-                            { name: 'Retail Alliance', icon: '🏪' }
-                        ].map((partner, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-emerald-200 transition-all group"
-                            >
-                                <div className="text-4xl md:text-5xl text-center mb-3 group-hover:scale-110 transition-transform">
-                                    {partner.icon}
-                                </div>
-                                <p className="text-xs md:text-sm font-medium text-slate-700 text-center leading-tight">
-                                    {partner.name}
-                                </p>
-                            </motion.div>
-                        ))}
-                    </div>
 
-                    {/* Simple Stats Banner */}
-                    <div className="mt-12 md:mt-16 grid grid-cols-3 gap-4 md:gap-8 max-w-3xl mx-auto">
-                        <div className="text-center">
-                            <p className="text-3xl md:text-4xl font-bold text-emerald-600 mb-2">10k+</p>
-                            <p className="text-sm text-slate-600">Verified Users</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">50M+</p>
-                            <p className="text-sm text-slate-600">Products Tracked</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-3xl md:text-4xl font-bold text-amber-600 mb-2">100%</p>
-                            <p className="text-sm text-slate-600">Transparent</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Interactive 3D Tilt Cards */}
-            <div className="bg-white py-12 md:py-20">
-                <div className="container mx-auto px-4 md:px-6">
-                    <div className="text-center mb-12">
-                        <h3 className="text-2xl md:text-4xl font-display font-bold text-slate-900 mb-4">Interactive Product Scanner</h3>
-                        <p className="text-slate-600 text-sm md:text-base">Hover over products to see their blockchain journey</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                        {[
-                            { name: 'Organic Wheat', origin: 'Punjab Farms', id: '#BTC-0x7F2A', color: 'from-amber-500 to-orange-500' },
-                            { name: 'Fresh Tomatoes', origin: 'Maharashtra', id: '#BTC-0x9C4E', color: 'from-red-500 to-pink-500' },
-                            { name: 'Basmati Rice', origin: 'Haryana Fields', id: '#BTC-0x1A8B', color: 'from-green-500 to-emerald-500' }
-                        ].map((product, i) => (
-                            <TiltCard key={i} product={product} cursorPos={cursorPos} isMobile={isMobile} />
-                        ))}
-                    </div>
-                </div>
-            </div>
 
             {/* How It Works */}
             <div className="bg-white py-12 md:py-24 relative z-10">
@@ -373,89 +283,8 @@ const Landing = () => {
             </div>
 
 
-            {/* Interactive Testimonials Carousel */}
-            <div className="bg-gradient-to-b from-slate-50 to-white py-12 md:py-24 relative overflow-hidden">
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-64 h-64 bg-emerald-200/10 rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-200/10 rounded-full blur-3xl"></div>
-                </div>
 
-                <div className="container mx-auto px-4 md:px-6 relative z-10">
-                    <div className="text-center mb-12 md:mb-16">
-                        <h3 className="text-2xl md:text-4xl font-display font-bold text-slate-900 mb-4">Trusted by Thousands</h3>
-                        <p className="text-slate-600 text-sm md:text-base">See what our community is saying about Farm2Fork</p>
-                    </div>
 
-                    <div className="max-w-4xl mx-auto relative">
-                        {/* Main Testimonial Card */}
-                        <motion.div
-                            key={currentTestimonial}
-                            initial={{ opacity: 0, scale: 0.95, rotateY: -10 }}
-                            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                            transition={{ duration: 0.6, type: "spring" }}
-                            onMouseEnter={() => setIsPaused(true)}
-                            onMouseLeave={() => setIsPaused(false)}
-                            className="bg-white p-8 md:p-12 rounded-3xl shadow-2xl border-2 border-slate-100 relative"
-                        >
-                            <div className="absolute -top-6 left-8 w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-2xl shadow-lg">
-                                {testimonials[currentTestimonial].avatar}
-                            </div>
-
-                            <div className="flex gap-2 mb-6 mt-2">
-                                {[...Array(testimonials[currentTestimonial].rating)].map((_, j) => (
-                                    <Star key={j} size={20} className="fill-amber-400 text-amber-400" />
-                                ))}
-                            </div>
-
-                            <p className="text-slate-700 text-lg md:text-xl italic leading-relaxed mb-8">
-                                "{testimonials[currentTestimonial].text}"
-                            </p>
-
-                            <div>
-                                <p className="font-bold text-slate-900 text-lg">{testimonials[currentTestimonial].name}</p>
-                                <p className="text-sm text-slate-500">{testimonials[currentTestimonial].role}</p>
-                            </div>
-
-                            <div className="absolute top-8 right-8 text-6xl md:text-8xl text-emerald-100 font-serif select-none">"</div>
-                        </motion.div>
-
-                        {/* Navigation Controls */}
-                        <div className="flex items-center justify-center gap-6 mt-8">
-                            <button
-                                onClick={() => setCurrentTestimonial(prev => (prev - 1 + testimonials.length) % testimonials.length)}
-                                className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all flex items-center justify-center group"
-                            >
-                                <ChevronDown size={20} className="rotate-90 text-slate-600 group-hover:text-emerald-600" />
-                            </button>
-
-                            {/* Progress Dots */}
-                            <div className="flex gap-2">
-                                {testimonials.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setCurrentTestimonial(i)}
-                                        className={`h-2 rounded-full transition-all ${i === currentTestimonial
-                                            ? 'w-8 bg-emerald-500'
-                                            : 'w-2 bg-slate-300 hover:bg-slate-400'
-                                            }`}
-                                    />
-                                ))}
-                            </div>
-
-                            <button
-                                onClick={() => setCurrentTestimonial(prev => (prev + 1) % testimonials.length)}
-                                className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all flex items-center justify-center group"
-                            >
-                                <ChevronDown size={20} className="-rotate-90 text-slate-600 group-hover:text-emerald-600" />
-                            </button>
-                        </div>
-
-                        {isPaused && (
-                            <p className="text-center text-xs text-slate-400 mt-4">Auto-play paused</p>
-                        )}
-                    </div>
-                </div>
-            </div>
 
             {/* Why Choose Us */}
             <div id="features" className="bg-slate-50 py-12 md:py-24 relative overflow-hidden">
@@ -677,7 +506,7 @@ const Landing = () => {
                 </div>
             </footer>
 
-        </div>
+        </div >
     );
 };
 
