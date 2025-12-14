@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Bell, User, ChevronDown, Leaf } from 'lucide-react';
+import { Menu, Bell, User, ChevronDown } from 'lucide-react';
+import logo from '../../assets/logo2.png';
 
 const Header = ({ toggleSidebar, role, userName = "Surya Mahesh" }) => {
     return (
@@ -13,12 +14,15 @@ const Header = ({ toggleSidebar, role, userName = "Surya Mahesh" }) => {
                     <Menu size={20} />
                 </button>
 
-                <Link to="/" className="flex items-center gap-2 group">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sage-400 to-sage-600 flex items-center justify-center text-white shadow-sm group-hover:shadow-md transition-all duration-300 transform group-hover:rotate-12">
-                        <Leaf size={16} fill="currentColor" />
-                    </div>
-                    <span className="font-display font-bold text-xl text-slate-800 tracking-tight">
-                        Agri<span className="text-sage-500">Chain</span>
+
+                <Link to="/" className="flex items-center gap-3 group">
+                    <img
+                        src={logo}
+                        alt="Farm2Fork Logo"
+                        className="h-20 md:h-24 w-auto object-contain transition-all duration-300 group-hover:scale-105"
+                    />
+                    <span className="font-display font-bold text-xl md:text-2xl text-slate-800 tracking-tight">
+                        Farm<span className="text-emerald-600">2</span>Fork
                     </span>
                 </Link>
             </div>

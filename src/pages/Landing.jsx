@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Sprout, Truck, Store, User, Database, Search, Shield, Leaf, BarChart3, Globe, Award, ArrowRight, CheckCircle2, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/ui/Button';
-import heroImage from '../assets/image22.png';
+import heroImage from '../assets/image.png';
+import logo from '../assets/logo2.png';
 import useMediaQuery from '../utils/useMediaQuery';
 
 const Landing = () => {
@@ -17,12 +18,16 @@ const Landing = () => {
             <nav className="fixed top-0 inset-x-0 z-50 px-4 md:px-6 py-4 pointer-events-none">
                 <div className="max-w-7xl mx-auto w-full pointer-events-auto">
                     <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-full px-4 md:px-6 py-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 md:w-9 h-8 md:h-9 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-200">
-                                <Sprout size={isMobile ? 18 : 20} />
-                            </div>
-                            <span className="font-display font-bold text-base md:text-lg tracking-tight text-slate-900">Agri<span className="text-emerald-700">Chain</span></span>
-                        </div>
+                        <Link to="/" className="flex items-center gap-2 md:gap-3">
+                            <img
+                                src={logo}
+                                alt="Farm2Fork Logo"
+                                className="h-14 md:h-16 w-auto object-contain"
+                            />
+                            <span className="font-display font-bold text-lg md:text-xl tracking-tight text-slate-900">
+                                Farm<span className="text-emerald-700">2</span>Fork
+                            </span>
+                        </Link>
 
                         {/* Desktop Navigation */}
                         <div className="hidden md:flex items-center gap-8">
@@ -239,12 +244,16 @@ const Landing = () => {
             <footer className="bg-slate-900 text-slate-400 py-8 md:py-12 border-t border-slate-800">
                 <div className="container mx-auto px-4 md:px-6">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-2 mb-2 md:mb-0">
-                            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white">
-                                <Sprout size={18} />
-                            </div>
-                            <span className="font-display font-bold text-lg md:text-xl text-white">AgriChain</span>
-                        </div>
+                        <Link to="/" className="flex items-center gap-2 md:gap-3 mb-2 md:mb-0">
+                            <img
+                                src={logo}
+                                alt="Farm2Fork Logo"
+                                className="h-12 md:h-16 w-auto object-contain brightness-0 invert"
+                            />
+                            <span className="font-display font-bold text-xl md:text-2xl text-white">
+                                Farm<span className="text-emerald-400">2</span>Fork
+                            </span>
+                        </Link>
                         <div className="flex gap-6 md:gap-8 text-sm font-medium">
                             <a href="#" className="hover:text-white transition-colors">Privacy</a>
                             <a href="#" className="hover:text-white transition-colors">Terms</a>
