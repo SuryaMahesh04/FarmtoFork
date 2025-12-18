@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Sprout, Truck, Store, User, Database, Search, Shield, Leaf, BarChart3, Globe, Award, ArrowRight, CheckCircle2, Menu, X, Zap, Lock, Clock, TrendingUp, Users, Package, Star, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/ui/Button';
-import heroImage from '../assets/image.png';
+import heroImage from '../assets/image22.png';
 import logo from '../assets/logo2.png';
 import useMediaQuery from '../utils/useMediaQuery';
 
