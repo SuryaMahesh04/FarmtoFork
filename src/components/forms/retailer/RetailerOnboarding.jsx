@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { Store, MapPin, FileText, CheckCircle } from 'lucide-react';
+import { Store, MapPin, FileText, CheckCircle, Lock } from 'lucide-react';
 import StepWizard from '../StepWizard';
 import FormInput from '../../ui/FormInput';
 import Select from '../../ui/Select';
@@ -13,6 +13,7 @@ const RetailerOnboarding = () => {
     const { register, handleSubmit, formState: { errors }, trigger } = useForm({ mode: 'onChange' });
 
     const steps = [
+        { title: 'Account Setup', icon: Lock },
         { title: 'Store Details', icon: Store },
         { title: 'Location', icon: MapPin },
         { title: 'Compliance', icon: FileText },
@@ -40,6 +41,39 @@ const RetailerOnboarding = () => {
             case 0:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
+                        <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Create your account</h2>
+                        <FormInput
+                            label="Email Address"
+                            name="emailAccount"
+                            type="email"
+                            register={register}
+                            required="Email is required"
+                            error={errors.emailAccount}
+                            placeholder="name@example.com"
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormInput
+                                label="Password"
+                                name="password"
+                                type="password"
+                                register={register}
+                                required="Password is required"
+                                error={errors.password}
+                            />
+                            <FormInput
+                                label="Confirm Password"
+                                name="confirmPassword"
+                                type="password"
+                                register={register}
+                                required="Confirm Password is required"
+                                error={errors.confirmPassword}
+                            />
+                        </div>
+                    </motion.div>
+                );
+            case 1:
+                return (
+                    <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Store Information</h2>
                         <FormInput label="Store Name" name="storeName" register={register} required="Store Name is required" error={errors.storeName} icon={Store} />
                         <Select label="Store Type" name="storeType" options={storeTypes} register={register} required="Store Type is required" error={errors.storeType} />
@@ -49,7 +83,7 @@ const RetailerOnboarding = () => {
                         </div>
                     </motion.div>
                 );
-            case 1:
+            case 2:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Store Location</h2>
@@ -61,7 +95,7 @@ const RetailerOnboarding = () => {
                         <FormInput label="Full Address" name="address" register={register} required="Address is required" error={errors.address} />
                     </motion.div>
                 );
-            case 2:
+            case 3:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Compliance (Optional)</h2>

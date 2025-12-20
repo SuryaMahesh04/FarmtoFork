@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const FormInput = ({
     label,
@@ -10,42 +11,55 @@ const FormInput = ({
     required,
     ...props
 }) => {
+    const [showPassword, setShowPassword] = useState(false);
+    const isPasswordField = type === 'password';
+    const inputType = isPasswordField && showPassword ? 'text' : type;
+
     return (
         <div className="relative group">
-            <div className="relative">
-                <input
-                    type={type}
-                    id={name}
-                    className={`
-            block px-4 pb-2.5 pt-5 w-full text-sm text-slate-800 bg-white/50 border rounded-xl appearance-none focus:outline-none focus:ring-0 peer transition-colors
-            ${error
-                            ? 'border-terra-300 focus:border-terra-500'
-                            : 'border-sage-200 focus:border-sage-500 hover:border-sage-300'}
-            ${Icon ? 'pl-10' : ''}
-          `}
-                    placeholder=" "
-                    {...(register ? register(name, { required }) : {})}
-                    {...props}
-                />
+            {/* Label above the input */}
+            <label
+                htmlFor={name}
+                className={`block text-sm font-medium mb-2 ${error ? 'text-terra-500' : 'text-slate-700'
+                    }`}
+            >
+                {label} {required && <span className="text-terra-400">*</span>}
+            </label>
 
+            <div className="relative">
                 {Icon && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 peer-focus:text-sage-500 transition-colors">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 focus-within:text-sage-500 transition-colors">
                         <Icon size={18} />
                     </div>
                 )}
 
-                <label
-                    htmlFor={name}
+                <input
+                    type={inputType}
+                    id={name}
                     className={`
-            absolute text-sm duration-300 transform -translate-y-4 scale-75 top-4 z-10 origin-[0] 
-            ${Icon ? 'left-10' : 'left-4'}
-            peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 
-            peer-focus:scale-75 peer-focus:-translate-y-4
-            ${error ? 'text-terra-500' : 'text-slate-500 peer-focus:text-sage-600'}
-          `}
-                >
-                    {label} {required && <span className="text-terra-400">*</span>}
-                </label>
+                        block w-full px-4 py-3 text-sm text-slate-800 bg-white/50 border rounded-xl 
+                        focus:outline-none focus:ring-2 transition-all
+                        ${error
+                            ? 'border-terra-300 focus:border-terra-500 focus:ring-terra-200'
+                            : 'border-sage-200 focus:border-sage-500 focus:ring-sage-200 hover:border-sage-300'}
+                        ${Icon ? 'pl-10' : ''}
+                        ${isPasswordField ? 'pr-10' : ''}
+                    `}
+                    {...(register ? register(name, { required }) : {})}
+                    {...props}
+                />
+
+                {/* Password toggle button */}
+                {isPasswordField && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                        tabIndex={-1}
+                    >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                )}
             </div>
 
             {error && (

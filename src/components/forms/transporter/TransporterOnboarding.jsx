@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { Truck, Map, FileText, CheckCircle, User } from 'lucide-react';
+import { Truck, Map, FileText, CheckCircle, User, Lock } from 'lucide-react';
 import StepWizard from '../StepWizard';
 import FormInput from '../../ui/FormInput';
 import Select from '../../ui/Select';
@@ -14,6 +14,7 @@ const TransporterOnboarding = () => {
     const { register, handleSubmit, formState: { errors }, trigger, watch } = useForm({ mode: 'onChange' });
 
     const steps = [
+        { title: 'Account Setup', icon: Lock },
         { title: 'Company Details', icon: User },
         { title: 'Fleet Info', icon: Truck },
         { title: 'Operating Region', icon: Map },
@@ -47,6 +48,39 @@ const TransporterOnboarding = () => {
             case 0:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
+                        <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Create your account</h2>
+                        <FormInput
+                            label="Email Address"
+                            name="emailAccount"
+                            type="email"
+                            register={register}
+                            required="Email is required"
+                            error={errors.emailAccount}
+                            placeholder="name@example.com"
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormInput
+                                label="Password"
+                                name="password"
+                                type="password"
+                                register={register}
+                                required="Password is required"
+                                error={errors.password}
+                            />
+                            <FormInput
+                                label="Confirm Password"
+                                name="confirmPassword"
+                                type="password"
+                                register={register}
+                                required="Confirm Password is required"
+                                error={errors.confirmPassword}
+                            />
+                        </div>
+                    </motion.div>
+                );
+            case 1:
+                return (
+                    <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Company / Owner Details</h2>
                         <FormInput label="Company Name" name="companyName" register={register} required="Company Name is required" error={errors.companyName} icon={User} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -56,7 +90,7 @@ const TransporterOnboarding = () => {
                         <FormInput label="Email Address" name="email" type="email" register={register} required="Email is required" error={errors.email} />
                     </motion.div>
                 );
-            case 1:
+            case 2:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Fleet Information</h2>
@@ -73,7 +107,7 @@ const TransporterOnboarding = () => {
                         </div>
                     </motion.div>
                 );
-            case 2:
+            case 3:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Operating Regions</h2>
@@ -84,7 +118,7 @@ const TransporterOnboarding = () => {
                         </div>
                     </motion.div>
                 );
-            case 3:
+            case 4:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Upload Documents</h2>

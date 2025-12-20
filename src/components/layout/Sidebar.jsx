@@ -1,5 +1,6 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { authHelpers } from '../../utils/api';
 import {
     LayoutDashboard,
     Package,
@@ -13,10 +14,21 @@ import {
     Sprout,
     LogOut,
     X,
-    MapPin
+    MapPin,
+    User
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
+    const navigate = useNavigate();
+
+    const handleSignOut = () => {
+        authHelpers.logout();
+        navigate('/');
+    };
+
+    // Get user data from localStorage
+    const user = authHelpers.getUser();
+
     // Define menu items based on role
     const getMenuItems = (role) => {
         const common = [
@@ -120,7 +132,10 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                         </button>
                     </div>
 
-                    <button className="flex items-center gap-3 px-3 py-2.5 mt-4 w-full rounded-lg text-sm font-medium text-terra-400 hover:bg-terra-50 transition-colors">
+                    <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-3 px-4 py-3 mt-4 w-full rounded-lg text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm active:scale-95"
+                    >
                         <LogOut size={20} />
                         Sign Out
                     </button>

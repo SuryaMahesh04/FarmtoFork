@@ -58,7 +58,7 @@ const Landing = () => {
                         <div className="hidden md:flex items-center gap-8">
                             <a href="#features" className="text-sm font-medium text-slate-600 hover:text-emerald-700 transition-colors">Features</a>
                             <a href="#roles" className="text-sm font-medium text-slate-600 hover:text-emerald-700 transition-colors">Roles</a>
-                            <Link to="/farmer">
+                            <Link to="/login">
                                 <Button variant="primary" size="sm" className="rounded-full bg-slate-900 hover:bg-slate-800 text-white px-6">Log In</Button>
                             </Link>
                         </div>
@@ -98,7 +98,7 @@ const Landing = () => {
                             >
                                 Roles
                             </a>
-                            <Link to="/farmer" className="mt-4">
+                            <Link to="/login" className="mt-4">
                                 <Button variant="primary" className="w-full rounded-full bg-slate-900 hover:bg-slate-800 text-white py-4">
                                     Log In
                                 </Button>
@@ -173,10 +173,8 @@ const Landing = () => {
                             transition={{ delay: 0.4 }}
                             className="mb-12"
                         >
-                            <Link to="/farmer">
-                                <button className="w-full max-w-xs mx-auto px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all active:scale-95">
-                                    Get Started
-                                </button>
+                            <Link to="/login">
+                                <Button variant="primary" size="sm" className="rounded-full bg-slate-900 hover:bg-slate-800 text-white px-6">Log In</Button>
                             </Link>
                         </motion.div>
                     )}
@@ -467,9 +465,9 @@ const Landing = () => {
                         <h3 className="text-3xl md:text-5xl font-display font-bold text-white mb-6">Ready to Transform Agriculture?</h3>
                         <p className="text-emerald-50 text-base md:text-lg mb-8 md:mb-10">Join thousands of farmers, transporters, and distributors building a transparent food system.</p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link to="/farmer">
-                                <button className="px-8 py-4 bg-white text-emerald-600 font-bold rounded-full hover:bg-emerald-50 transition-all shadow-lg hover:shadow-xl w-full sm:w-auto">
-                                    Get Started Free
+                            <Link to="/signup">
+                                <button className="w-full max-w-xs mx-auto px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all active:scale-95">
+                                    Get Started
                                 </button>
                             </Link>
                             <button className="px-8 py-4 bg-emerald-700 text-white font-bold rounded-full hover:bg-emerald-800 transition-all border-2 border-white/20 w-full sm:w-auto">
