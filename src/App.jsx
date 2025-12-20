@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/layout/ScrollToTop';
 import Landing from './pages/Landing';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import FarmerOnboarding from './components/forms/farmer/FarmerOnboarding';
 import TransporterOnboarding from './components/forms/transporter/TransporterOnboarding';
 import DistributorOnboarding from './components/forms/distributor/DistributorOnboarding';
@@ -42,6 +44,8 @@ function App() {
             <div className="min-h-screen relative overflow-hidden">
                 <Routes>
                     <Route path="/" element={<Landing />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/signup" element={<SignupPage />} />
 
                     {/* Onboarding Routes */}
                     <Route path="/onboarding/farmer" element={<FarmerOnboarding />} />

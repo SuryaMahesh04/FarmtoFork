@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { User, MapPin, Sprout, FileText, CheckCircle } from 'lucide-react';
+import { User, MapPin, Sprout, FileText, CheckCircle, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import StepWizard from '../StepWizard';
 import FormInput from '../../ui/FormInput';
 import Select from '../../ui/Select';
 import Button from '../../ui/Button';
 import { indiaStates, cropTypes, landTypes } from '../../../data/indiaGeoData';
+import { api, authHelpers } from '../../../utils/api';
 
 const FarmerOnboarding = () => {
+    const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
     const [formData, setFormData] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const { register, handleSubmit, formState: { errors }, trigger, watch } = useForm({ mode: 'onChange' });
 
     const selectedState = watch('state');
 
     const steps = [
+        { title: 'Account Setup', icon: Lock },
         { title: 'Personal Details', icon: User },
         { title: 'Farm Details', icon: Sprout },
         { title: 'KYC & Bank', icon: FileText },
@@ -34,15 +40,86 @@ const FarmerOnboarding = () => {
         setCurrentStep(prev => Math.max(prev - 1, 0));
     };
 
-    const onSubmit = (data) => {
-        console.log('Form Submitted:', data);
-        // Navigate to dashboard
-        window.location.href = '/farmer';
+    const onSubmit = async (data) => {
+        setLoading(true);
+        setError('');
+
+        try {
+            // First, register the user account (Step 0 data)
+            const registerResponse = await api.auth.register({
+                email: formData.email,
+                password: formData.password,
+                role: 'farmer'
+            });
+
+            if (registerResponse.success) {
+                // Save token from registration
+                authHelpers.saveToken(registerResponse.data.token);
+                authHelpers.saveUser(registerResponse.data.user);
+
+                // Then, update profile with remaining onboarding data
+                await api.auth.updateProfile({
+                    fullName: data.fullName,
+                    mobile: data.mobile,
+                    state: data.state,
+                    district: data.district,
+                    village: data.village,
+                    landSize: parseFloat(data.landSize),
+                    landType: data.landType,
+                    primaryCrop: data.primaryCrop,
+                    organicCertified: data.organicCertified === 'yes',
+                    aadhaarNumber: data.aadhaar,
+                    bankAccount: data.bankAccount,
+                    ifscCode: data.ifsc
+                });
+
+                // Navigate to farmer dashboard
+                navigate('/farmer');
+            }
+        } catch (err) {
+            setError(err.message || 'Registration failed. Please try again.');
+            setCurrentStep(0); // Go back to first step on error
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderStep = () => {
         switch (currentStep) {
             case 0:
+                return (
+                    <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
+                        <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Create your account</h2>
+                        <FormInput
+                            label="Email Address"
+                            name="email"
+                            type="email"
+                            register={register}
+                            required="Email is required"
+                            error={errors.email}
+                            placeholder="name@example.com"
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormInput
+                                label="Password"
+                                name="password"
+                                type="password"
+                                register={register}
+                                required="Password is required"
+                                error={errors.password}
+                            />
+                            <FormInput
+                                label="Confirm Password"
+                                name="confirmPassword"
+                                type="password"
+                                register={register}
+                                required="Confirm Password is required"
+                                error={errors.confirmPassword}
+                            />
+                        </div>
+                    </motion.div>
+                );
+            case 1:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Tell us about yourself</h2>
@@ -65,7 +142,7 @@ const FarmerOnboarding = () => {
                         <FormInput label="Village / Area" name="village" register={register} required="Village is required" error={errors.village} />
                     </motion.div>
                 );
-            case 1:
+            case 2:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Farm Information</h2>
@@ -89,7 +166,7 @@ const FarmerOnboarding = () => {
                         </div>
                     </motion.div>
                 );
-            case 2:
+            case 3:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">KYC & Documents</h2>
@@ -104,12 +181,13 @@ const FarmerOnboarding = () => {
                         </div>
                     </motion.div>
                 );
-            case 3:
+            case 4:
                 const data = watch();
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-6">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Review Details</h2>
                         <div className="bg-sage-50/80 p-6 rounded-2xl border border-sage-100 space-y-4">
+                            <ReviewRow label="Email" value={data.email} />
                             <ReviewRow label="Full Name" value={data.fullName} />
                             <ReviewRow label="Mobile" value={data.mobile} />
                             <ReviewRow label="Location" value={`${data.village}, ${data.district}, ${data.state}`} />
@@ -140,18 +218,30 @@ const FarmerOnboarding = () => {
                     <form className="mt-8 min-h-[300px] flex flex-col justify-between">
                         {renderStep()}
 
+                        {error && currentStep === steps.length - 1 && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mt-4">
+                                {error}
+                            </div>
+                        )}
+
                         <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
                             <Button
                                 variant="ghost"
                                 onClick={handleBack}
-                                disabled={currentStep === 0}
+                                disabled={currentStep === 0 || loading}
                                 className={currentStep === 0 ? 'invisible' : ''}
                             >
                                 Back
                             </Button>
 
                             {currentStep === steps.length - 1 ? (
-                                <Button onClick={handleSubmit(onSubmit)} className="w-32">Submit</Button>
+                                <Button
+                                    onClick={handleSubmit(onSubmit)}
+                                    disabled={loading}
+                                    className="w-32"
+                                >
+                                    {loading ? 'Submitting...' : 'Submit'}
+                                </Button>
                             ) : (
                                 <Button onClick={handleNext} className="w-32">Next</Button>
                             )}

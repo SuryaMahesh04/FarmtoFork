@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { Building2, Package, FileText, CheckCircle, Database } from 'lucide-react';
+import { Building2, Package, FileText, CheckCircle, Database, Lock } from 'lucide-react';
 import StepWizard from '../StepWizard';
 import FormInput from '../../ui/FormInput';
 import Select from '../../ui/Select';
@@ -13,6 +13,7 @@ const DistributorOnboarding = () => {
     const { register, handleSubmit, formState: { errors }, trigger, watch } = useForm({ mode: 'onChange' });
 
     const steps = [
+        { title: 'Account Setup', icon: Lock },
         { title: 'Business Details', icon: Building2 },
         { title: 'Warehouse', icon: Database },
         { title: 'Compliance', icon: FileText },
@@ -42,6 +43,39 @@ const DistributorOnboarding = () => {
             case 0:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
+                        <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Create your account</h2>
+                        <FormInput
+                            label="Email Address"
+                            name="emailAccount"
+                            type="email"
+                            register={register}
+                            required="Email is required"
+                            error={errors.emailAccount}
+                            placeholder="name@example.com"
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormInput
+                                label="Password"
+                                name="password"
+                                type="password"
+                                register={register}
+                                required="Password is required"
+                                error={errors.password}
+                            />
+                            <FormInput
+                                label="Confirm Password"
+                                name="confirmPassword"
+                                type="password"
+                                register={register}
+                                required="Confirm Password is required"
+                                error={errors.confirmPassword}
+                            />
+                        </div>
+                    </motion.div>
+                );
+            case 1:
+                return (
+                    <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Business Information</h2>
                         <FormInput label="Business Name" name="businessName" register={register} required="Business Name is required" error={errors.businessName} icon={Building2} />
                         <FormInput label="Owner Name" name="ownerName" register={register} required="Owner Name is required" error={errors.ownerName} />
@@ -51,7 +85,7 @@ const DistributorOnboarding = () => {
                         </div>
                     </motion.div>
                 );
-            case 1:
+            case 2:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Warehouse & Storage</h2>
@@ -64,7 +98,7 @@ const DistributorOnboarding = () => {
                         <FormInput label="City / Location" name="location" register={register} required="Location is required" error={errors.location} />
                     </motion.div>
                 );
-            case 2:
+            case 3:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
                         <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Compliance</h2>
