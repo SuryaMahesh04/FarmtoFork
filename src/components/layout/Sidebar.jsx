@@ -17,6 +17,7 @@ import {
     MapPin,
     User
 } from 'lucide-react';
+import logo from '../../assets/logo2.png';
 
 const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
     const navigate = useNavigate();
@@ -96,7 +97,7 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
         fixed top-0 left-0 bottom-0 z-50 w-64 glass-panel border-r border-sage-200
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        pt-16 pb-6 flex flex-col justify-between
+        py-6 flex flex-col justify-between
       `}>
                 <div className="absolute top-4 right-4 lg:hidden">
                     <button onClick={toggleSidebar} className="p-1 rounded text-slate-500 hover:bg-slate-100">
@@ -104,7 +105,20 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     </button>
                 </div>
 
-                <nav className="px-4 py-6 space-y-1">
+                <div className="px-6 mb-2">
+                    <NavLink to="/" className="flex items-center gap-2 group">
+                        <img
+                            src={logo}
+                            alt="Farm2Fork Logo"
+                            className="h-10 w-auto object-contain transition-all duration-300 group-hover:scale-105"
+                        />
+                        <span className="font-display font-bold text-xl text-slate-800 tracking-tight">
+                            Farm<span className="text-emerald-600">2</span>Fork
+                        </span>
+                    </NavLink>
+                </div>
+
+                <nav className="px-4 space-y-1">
                     {menuItems.map((item, index) => (
                         <NavLink
                             key={index}

@@ -67,8 +67,8 @@ const FarmerDashboard = () => {
         { header: 'Batch ID', accessor: 'batchId', render: (row) => `BTH-${row.batchId}` },
         { header: 'Crop', accessor: 'crop' },
         { header: 'Variety', accessor: 'variety' },
-        { header: 'Quantity', accessor: (row) => `${row.quantity} ${row.unit}` },
-        { header: 'Date', accessor: (row) => new Date(row.harvestDate).toLocaleDateString() },
+        { header: 'Quantity', accessor: 'quantity', render: (row) => `${row.quantity} ${row.unit}` },
+        { header: 'Date', accessor: 'harvestDate', render: (row) => new Date(row.harvestDate).toLocaleDateString() },
         { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
     ];
 
