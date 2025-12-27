@@ -16,9 +16,11 @@ const FarmerOnboarding = () => {
     const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const { register, handleSubmit, formState: { errors }, trigger, watch } = useForm({ mode: 'onChange' });
+    const [isManualVillage, setIsManualVillage] = useState(false);
+    const { register, handleSubmit, formState: { errors }, trigger, watch, setValue } = useForm({ mode: 'onChange' });
 
     const selectedState = watch('state');
+    const selectedDistrict = watch('district');
 
     const steps = [
         { title: 'Account Setup', icon: Lock },
@@ -132,14 +134,43 @@ const FarmerOnboarding = () => {
                             <Select
                                 label="District"
                                 name="district"
-                                options={selectedState ? indiaStates.find(s => s.value === selectedState)?.districts.map(d => ({ value: d, label: d })) : []}
+                                options={selectedState ? indiaStates.find(s => s.value === selectedState)?.districts.map(d => ({ value: d.name, label: d.name })) : []}
                                 register={register}
                                 required="District is required"
                                 error={errors.district}
                                 disabled={!selectedState}
                             />
                         </div>
-                        <FormInput label="Village / Area" name="village" register={register} required="Village is required" error={errors.village} />
+                        {isManualVillage ? (
+                            <div className="space-y-4">
+                                <FormInput label="Village / Area (Manual Entry)" name="village" register={register} required="Village is required" error={errors.village} />
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsManualVillage(false); setValue('village', ''); }}
+                                    className="text-sm text-sage-600 hover:text-sage-800 underline"
+                                >
+                                    Select from List
+                                </button>
+                            </div>
+                        ) : (
+                            <Select
+                                label="Village / Area"
+                                name="village"
+                                options={selectedState && selectedDistrict ?
+                                    [...indiaStates.find(s => s.value === selectedState)?.districts.find(d => d.name === selectedDistrict)?.villages.map(v => ({ value: v, label: v })) || [],]
+                                    : []}
+                                register={register}
+                                required="Village is required"
+                                error={errors.village}
+                                disabled={!selectedDistrict}
+                                onChange={(e) => {
+                                    if (e.target.value === 'Other') {
+                                        setIsManualVillage(true);
+                                        setValue('village', ''); // Clear value for manual entry
+                                    }
+                                }}
+                            />
+                        )}
                     </motion.div>
                 );
             case 2:

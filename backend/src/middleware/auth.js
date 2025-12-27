@@ -56,7 +56,5 @@ exports.authorize = (...roles) => {
 
 // Generate JWT token
 exports.generateToken = (userId) => {
-    return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRES_IN
-    });
+    return jwt.sign({ id: userId }, process.env.JWT_SECRET);
 };

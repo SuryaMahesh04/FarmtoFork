@@ -1,164 +1,101 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { MapPin, Calendar, Truck, User, Leaf, CheckCircle, Search, ArrowRight } from 'lucide-react';
-import { farmerBatches } from '../../data/dummyData';
+import { Loader2, Package, MapPin, Calendar, User, ShieldCheck } from 'lucide-react';
+import Header from '../../components/layout/Header';
+import Footer from '../../components/layout/Footer';
 
 const TraceProduct = () => {
     const { batchId } = useParams();
-    const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simulate loading for effect
-        setTimeout(() => {
-            const found = farmerBatches.find(b => b.id === batchId) || farmerBatches[0];
-            setProduct(found);
-            setLoading(false);
-        }, 1500);
-    }, [batchId]);
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-sage-50">
-                <div className="w-16 h-16 border-4 border-sage-200 border-t-sage-500 rounded-full animate-spin mb-4"></div>
-                <p className="text-sage-600 animate-pulse">Tracing provenance on blockchain...</p>
-            </div>
-        );
-    }
+        // Simulate loading
+        setTimeout(() => setLoading(false), 1500);
+    }, []);
 
     return (
-        <div className="min-h-screen bg-sage-50 pb-20">
-            {/* Hero Section */}
-            <div className="relative h-[400px] overflow-hidden">
-                <div className="absolute inset-0 bg-slate-900/40 z-10"></div>
-                <img
-                    src={`https://source.unsplash.com/1600x900/?${product.crop.split(' ')[0]},farm`}
-                    className="w-full h-full object-cover"
-                    alt="Farm background"
-                />
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white text-center p-4">
-                    <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-xs font-medium uppercase tracking-wider mb-4 inline-block">
-                            Verified Blockchain Trace
-                        </span>
-                        <h1 className="text-5xl md:text-7xl font-display font-bold mb-4">{product.crop}</h1>
-                        <p className="text-xl opacity-90">{product.variety} Variety • Batch #{product.id}</p>
-                    </motion.div>
-                </div>
-            </div>
+        <div className="min-h-screen bg-slate-50 flex flex-col">
+            <Header />
 
-            {/* Content Container */}
-            <div className="max-w-3xl mx-auto px-4 -mt-20 relative z-30">
-
-                {/* Summary Card */}
-                <motion.div
-                    initial={{ y: 40, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="bg-white rounded-3xl shadow-xl p-8 mb-8"
-                >
-                    <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-center">
-                        <div>
-                            <div className="w-12 h-12 rounded-full bg-sage-50 text-sage-600 flex items-center justify-center mx-auto mb-2">
-                                <User size={24} />
-                            </div>
-                            <p className="text-xs text-slate-400 uppercase tracking-wide">Farmer</p>
-                            <p className="font-semibold text-slate-700">Surya Mahesh</p>
+            <main className="flex-grow container mx-auto px-4 py-8">
+                <div className="max-w-3xl mx-auto">
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center h-64">
+                            <Loader2 className="animate-spin text-sage-500 mb-4" size={48} />
+                            <p className="text-slate-500">Fetching blockchain records...</p>
                         </div>
-                        <div>
-                            <div className="w-12 h-12 rounded-full bg-wheat-50 text-wheat-600 flex items-center justify-center mx-auto mb-2">
-                                <MapPin size={24} />
+                    ) : (
+                        <div className="space-y-6 animate-in fade-in">
+                            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-sage-100">
+                                <div className="bg-sage-600 p-6 text-white text-center">
+                                    <ShieldCheck size={48} className="mx-auto mb-2 text-sage-200" />
+                                    <h1 className="text-2xl font-display font-bold">Verified Authentic</h1>
+                                    <p className="text-sage-100 mt-1">Batch ID: {batchId || 'BTH-00000X'}</p>
+                                </div>
+
+                                <div className="p-8">
+                                    <div className="text-center mb-8">
+                                        <p className="text-slate-500">
+                                            This product has been securely traced via the Farm2Fork blockchain network.
+                                            Orign: <strong>Guntur, Andhra Pradesh</strong>
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <Package className="text-sage-600" size={20} />
+                                                <h3 className="font-semibold text-slate-700">Product Info</h3>
+                                            </div>
+                                            <div className="space-y-1 text-sm">
+                                                <div className="flex justify-between"><span>Crop:</span> <span className="font-medium">Premium Rice</span></div>
+                                                <div className="flex justify-between"><span>Variety:</span> <span className="font-medium">Sona Masoori</span></div>
+                                                <div className="flex justify-between"><span>Grade:</span> <span className="font-medium">A+ Export Quality</span></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <User className="text-sage-600" size={20} />
+                                                <h3 className="font-semibold text-slate-700">Farmer Details</h3>
+                                            </div>
+                                            <div className="space-y-1 text-sm">
+                                                <div className="flex justify-between"><span>Farmer:</span> <span className="font-medium">Rajesh Kumar</span></div>
+                                                <div className="flex justify-between"><span>Location:</span> <span className="font-medium">Amaravati, AP</span></div>
+                                                <div className="flex justify-between"><span>Harvested:</span> <span className="font-medium">12 Dec 2024</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Timeline Placeholder */}
+                                    <div className="mt-8 pt-8 border-t border-slate-100">
+                                        <h3 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                                            <MapPin size={18} /> Journey Timeline
+                                        </h3>
+                                        <div className="space-y-6 relative pl-4 border-l-2 border-slate-200 ml-2">
+                                            <div className="relative">
+                                                <span className="absolute -left-[21px] top-0 w-4 h-4 rounded-full bg-sage-500 border-2 border-white ring-2 ring-sage-100"></span>
+                                                <p className="text-sm font-bold text-slate-800">Harvested</p>
+                                                <p className="text-xs text-slate-500">12 Dec 2024 • 08:30 AM</p>
+                                                <p className="text-sm text-slate-600 mt-1">Harvested at Krishna Farm, Block A</p>
+                                            </div>
+                                            <div className="relative">
+                                                <span className="absolute -left-[21px] top-0 w-4 h-4 rounded-full bg-sage-500 border-2 border-white ring-2 ring-sage-100"></span>
+                                                <p className="text-sm font-bold text-slate-800">Quality Check</p>
+                                                <p className="text-xs text-slate-500">13 Dec 2024 • 10:15 AM</p>
+                                                <p className="text-sm text-slate-600 mt-1">Passed inspection with Grade A score</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="text-xs text-slate-400 uppercase tracking-wide">Origin</p>
-                            <p className="font-semibold text-slate-700">Gunter, AP</p>
                         </div>
-                        <div>
-                            <div className="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mx-auto mb-2">
-                                <Calendar size={24} />
-                            </div>
-                            <p className="text-xs text-slate-400 uppercase tracking-wide">Harvested</p>
-                            <p className="font-semibold text-slate-700">{product.date}</p>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Journey Timeline */}
-                <div className="space-y-8 pl-4 md:pl-0">
-                    <h2 className="text-2xl font-display font-bold text-center text-slate-800 mb-8">The Journey to You</h2>
-
-                    <div className="relative border-l-2 border-sage-200 ml-4 md:ml-12 space-y-12 pb-12">
-                        <TimelineEvent
-                            icon={Leaf}
-                            title="Harvested & Quality Check"
-                            date={product.date}
-                            location="Guntur Farms, AP"
-                            details="Crop harvested at peak maturity. Quality grade A+ verified."
-                            color="bg-sage-500"
-                        />
-                        <TimelineEvent
-                            icon={Truck}
-                            title="Transported to Warehouse"
-                            date="2023-11-21"
-                            location="Via Express Logistics"
-                            details="Temperature controlled transport (-4°C maintained)."
-                            color="bg-sky-500"
-                        />
-                        <TimelineEvent
-                            icon={CheckCircle}
-                            title="Distributor Verified"
-                            date="2023-11-23"
-                            location="Central Hub, Hyderabad"
-                            details="Received and stored in Zone A. No damage reported."
-                            color="bg-wheat-500"
-                        />
-                        <TimelineEvent
-                            icon={MapPin}
-                            title="Available at Retailer"
-                            date="In Stock"
-                            location="SuperMart, Jubilee Hills"
-                            details="Ready for purchase. Shelf life: 6 months."
-                            color="bg-terra-500"
-                            isLast
-                        />
-                    </div>
+                    )}
                 </div>
-
-                {/* Trust Badge */}
-                <div className="mt-12 text-center">
-                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-green-50 border border-green-100 rounded-full text-green-700">
-                        <CheckCircle size={20} />
-                        <span className="font-medium">100% Verified on AgriChain Blockchain</span>
-                    </div>
-                </div>
-            </div>
+            </main>
+            <Footer />
         </div>
     );
 };
-
-const TimelineEvent = ({ icon: Icon, title, date, location, details, color, isLast }) => (
-    <motion.div
-        initial={{ x: -20, opacity: 0 }}
-        whileInView={{ x: 0, opacity: 1 }}
-        viewport={{ once: true }}
-        className="relative pl-8 md:pl-12"
-    >
-        <div className={`absolute -left-[9px] top-0 w-6 h-6 rounded-full border-4 border-white shadow-sm ${color} z-10`}></div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative group hover:-translate-y-1 transition-transform duration-300">
-            <div className={`absolute top-6 right-6 p-2 rounded-xl bg-slate-50 text-slate-400 group-hover:text-white transition-colors duration-300`} style={{ '--tw-bg-opacity': 1, backgroundColor: 'var(--tw-bg-opacity)' }}>
-                <Icon size={20} className="group-hover:text-white" />
-            </div>
-            <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1 block">{date}</span>
-            <h3 className="text-lg font-bold text-slate-800 mb-1">{title}</h3>
-            <p className="text-sm font-medium text-sage-600 mb-2 flex items-center gap-1">
-                <MapPin size={14} /> {location}
-            </p>
-            <p className="text-sm text-slate-500 leading-relaxed">{details}</p>
-        </div>
-    </motion.div>
-);
 
 export default TraceProduct;

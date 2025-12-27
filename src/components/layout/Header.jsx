@@ -46,7 +46,7 @@ const Header = ({ toggleSidebar, role, userName = "Surya Mahesh" }) => {
                 <div className="flex items-center gap-3 pl-2 md:border-l md:border-slate-200">
                     <div className="hidden md:block text-right">
                         <p className="text-sm font-medium text-slate-700">{displayName}</p>
-                        <p className="text-xs text-slate-500">{role || 'Select Role'}</p>
+                        <p className="text-xs text-slate-500">{user?.email || role}</p>
                     </div>
                     <button className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 border border-white shadow-sm flex items-center justify-center text-white font-semibold overflow-hidden hover:ring-2 hover:ring-emerald-200 transition-all">
                         {user?.profile?.fullName ? user.profile.fullName.charAt(0).toUpperCase() : <User size={20} />}

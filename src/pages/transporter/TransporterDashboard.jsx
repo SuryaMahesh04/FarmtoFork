@@ -15,6 +15,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import { chartTheme } from '../../utils/chartConfig';
 import useMediaQuery from '../../utils/useMediaQuery';
+import { authHelpers } from '../../utils/api';
 
 // Dummy data for transporter dashboard
 const routeAnalyticsData = [
@@ -31,12 +32,6 @@ const deliveryTimeData = [
     { name: 'Standard', hours: 24 },
     { name: 'Economy', hours: 48 },
     { name: 'Bulk', hours: 72 }
-];
-
-const vehicleUtilizationData = [
-    { name: 'Active', value: 14, color: '#5c9449' },
-    { name: 'In Maintenance', value: 3, color: '#f5deb3' },
-    { name: 'Available', value: 8, color: '#b4d7e8' }
 ];
 
 const fleetHealthData = [
@@ -58,6 +53,20 @@ const activeShipments = [
 const TransporterDashboard = () => {
     const navigate = useNavigate();
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const user = authHelpers.getUser();
+    const profile = user?.profile || {};
+
+    // Dynamic data based on profile
+    const fleetSize = profile.fleetSize || 25; // Default if not set
+    const activeVehicles = Math.round(fleetSize * 0.6);
+    const maintenanceVehicles = Math.round(fleetSize * 0.1);
+    const availableVehicles = fleetSize - activeVehicles - maintenanceVehicles;
+
+    const vehicleUtilizationData = [
+        { name: 'Active', value: activeVehicles, color: '#5c9449' },
+        { name: 'In Maintenance', value: maintenanceVehicles, color: '#f5deb3' },
+        { name: 'Available', value: availableVehicles, color: '#b4d7e8' }
+    ];
 
     const columns = [
         { header: 'Shipment ID', accessor: 'id' },
@@ -80,7 +89,9 @@ const TransporterDashboard = () => {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in">
                     <div>
-                        <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Fleet Command Center 🚚</h1>
+                        <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">
+                            {profile.companyName || 'Fleet'} Command Center 🚚
+                        </h1>
                         <p className="text-sm md:text-base text-slate-500">Real-time tracking and fleet management</p>
                     </div>
                     {!isMobile && (
@@ -92,14 +103,14 @@ const TransporterDashboard = () => {
                 <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-4 gap-6'}`}>
                     {isMobile ? (
                         <>
-                            <MobileMetricCard title="Active Shipments" value={14} icon={Truck} trend={5} color="sage" delay={0.1} />
+                            <MobileMetricCard title="Total Fleet Size" value={fleetSize} icon={Truck} trend={0} color="sage" delay={0.1} />
                             <MobileMetricCard title="Completed" value={452} icon={CheckCircle2} trend={15} color="sky" delay={0.2} />
                             <MobileMetricCard title="Total Distance" value="12.5K km" icon={Navigation} trend={8} color="wheat" delay={0.3} />
                             <MobileMetricCard title="Fleet Efficiency" value={92} icon={Activity} trend={-1} color="terra" delay={0.4} />
                         </>
                     ) : (
                         <>
-                            <MetricCard title="Active Shipments" value={14} icon={Truck} trend={5} color="sage" delay={0.1} />
+                            <MetricCard title="Total Fleet Size" value={fleetSize} icon={Truck} trend={0} color="sage" delay={0.1} />
                             <MetricCard title="Completed" value={452} icon={CheckCircle2} trend={15} color="sky" delay={0.2} />
                             <MetricCard title="Total Distance" value={12500} icon={Navigation} trend={8} color="wheat" delay={0.3} />
                             <MetricCard title="Fleet Efficiency" value={92} icon={Activity} trend={-1} color="terra" delay={0.4} />
@@ -177,7 +188,7 @@ const TransporterDashboard = () => {
                                 {vehicleUtilizationData.map(d => (
                                     <div key={d.name} className="flex items-center gap-2 text-xs text-slate-500">
                                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></span>
-                                        {d.name}
+                                        {d.name} ({Math.round((d.value / fleetSize) * 100)}%)
                                     </div>
                                 ))}
                             </div>

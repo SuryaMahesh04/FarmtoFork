@@ -159,7 +159,7 @@ exports.updateBatch = async (req, res) => {
             });
         }
 
-        const { pricePerUnit, qualityScore, notes, status } = req.body;
+        const { pricePerUnit, qualityScore, notes, status, qrGenerated } = req.body;
 
         if (pricePerUnit !== undefined) {
             batch.pricePerUnit = pricePerUnit;
@@ -168,6 +168,7 @@ exports.updateBatch = async (req, res) => {
         if (qualityScore !== undefined) batch.qualityScore = qualityScore;
         if (notes !== undefined) batch.notes = notes;
         if (status !== undefined) batch.status = status;
+        if (qrGenerated !== undefined) batch.qrGenerated = qrGenerated;
 
         await batch.save();
 
@@ -285,7 +286,23 @@ exports.getAnalytics = async (req, res) => {
                 },
                 cropDistribution: cropDistributionData,
                 seasonalTrends: seasonalTrendData,
-                marketPrices: marketPriceData
+                marketPrices: marketPriceData,
+                resourceUsage: [
+                    { month: 'Jan', water: 450, fertilizer: 120, labor: 240 },
+                    { month: 'Feb', water: 520, fertilizer: 140, labor: 260 },
+                    { month: 'Mar', water: 480, fertilizer: 130, labor: 250 },
+                    { month: 'Apr', water: 600, fertilizer: 180, labor: 300 },
+                    { month: 'May', water: 550, fertilizer: 160, labor: 280 },
+                    { month: 'Jun', water: 580, fertilizer: 170, labor: 290 }
+                ],
+                soilHealth: [
+                    { subject: 'Nitrogen (N)', A: 85, B: 120, fullMark: 150 },
+                    { subject: 'Phosphorus (P)', A: 90, B: 110, fullMark: 150 },
+                    { subject: 'Potassium (K)', A: 130, B: 130, fullMark: 150 },
+                    { subject: 'pH Level', A: 80, B: 100, fullMark: 150 },
+                    { subject: 'Moisture', A: 65, B: 90, fullMark: 150 },
+                    { subject: 'Organic C', A: 70, B: 85, fullMark: 150 }
+                ]
             }
         });
     } catch (error) {

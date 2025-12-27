@@ -59,6 +59,12 @@ const batchSchema = new mongoose.Schema({
         }
     },
 
+    // QR Code Status
+    qrGenerated: {
+        type: Boolean,
+        default: false
+    },
+
     // Simulated Blockchain
     blockchainHash: {
         type: String,
