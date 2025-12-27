@@ -2,15 +2,20 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { Truck, Map, FileText, CheckCircle, User, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import StepWizard from '../StepWizard';
 import FormInput from '../../ui/FormInput';
 import Select from '../../ui/Select';
 import Button from '../../ui/Button';
 import { indiaStates } from '../../../data/indiaGeoData';
+import { api, authHelpers } from '../../../utils/api';
 
 const TransporterOnboarding = () => {
+    const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
     const [formData, setFormData] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const { register, handleSubmit, formState: { errors }, trigger, watch } = useForm({ mode: 'onChange' });
 
     const steps = [
@@ -31,9 +36,52 @@ const TransporterOnboarding = () => {
 
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 0));
 
-    const onSubmit = (data) => {
-        console.log('Transporter Registered:', data);
-        window.location.href = '/transporter';
+    const onSubmit = async (data) => {
+        setLoading(true);
+        setError('');
+
+        try {
+            // Register user with credentials from Step 0
+            const registerResponse = await api.auth.register({
+                email: formData.emailAccount,
+                password: formData.password,
+                role: 'transporter'
+            });
+
+            if (registerResponse.success) {
+                // Save token
+                authHelpers.saveToken(registerResponse.data.token);
+                authHelpers.saveUser(registerResponse.data.user);
+
+                // Update profile with transporter details
+                const updateResponse = await api.auth.updateProfile({
+                    fullName: data.ownerName, // Map owner name to full name for display
+                    companyName: data.companyName,
+                    ownerName: data.ownerName,
+                    mobile: data.mobile,
+                    city: data.hubCity,
+                    gstNumber: data.gst,
+                    fleetSize: parseInt(data.fleetSize),
+                    vehicleTypes: [data.vehicleType],
+                    serviceAreas: [data.primaryState],
+                    // Store other fields if needed by backend model
+                });
+
+                if (updateResponse.success) {
+                    // Update local user data with the profile info returned from server
+                    authHelpers.saveUser(updateResponse.data);
+                }
+
+                // Navigate to transporter dashboard
+                navigate('/transporter');
+            }
+        } catch (err) {
+            console.error('Registration error:', err);
+            setError(err.message || 'Registration failed. Please try again.');
+            setCurrentStep(0); // Go back to fix account details if they caused the error
+        } finally {
+            setLoading(false);
+        }
     };
 
     const vehicleTypes = [
@@ -149,12 +197,21 @@ const TransporterOnboarding = () => {
                     <StepWizard steps={steps} currentStep={currentStep} />
                     <form className="mt-8 min-h-[300px] flex flex-col justify-between">
                         {renderStep()}
+
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mt-4">
+                                {error}
+                            </div>
+                        )}
+
                         <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
-                            <Button variant="ghost" onClick={handleBack} disabled={currentStep === 0} className={currentStep === 0 ? 'invisible' : ''}>Back</Button>
+                            <Button variant="ghost" type="button" onClick={handleBack} disabled={currentStep === 0 || loading} className={currentStep === 0 ? 'invisible' : ''}>Back</Button>
                             {currentStep === steps.length - 1 ? (
-                                <Button onClick={handleSubmit(onSubmit)} className="w-32 bg-sky-500 hover:bg-sky-600">Submit</Button>
+                                <Button onClick={handleSubmit(onSubmit)} disabled={loading} className="w-32 bg-sky-500 hover:bg-sky-600">
+                                    {loading ? 'Submitting...' : 'Submit'}
+                                </Button>
                             ) : (
-                                <Button onClick={handleNext} className="w-32 bg-sky-500 hover:bg-sky-600">Next</Button>
+                                <Button type="button" onClick={handleNext} className="w-32 bg-sky-500 hover:bg-sky-600">Next</Button>
                             )}
                         </div>
                     </form>
