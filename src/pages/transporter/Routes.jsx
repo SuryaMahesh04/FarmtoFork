@@ -1,22 +1,73 @@
-import React from 'react';
-import { MapPin, TrendingUp, Clock, Navigation } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MapPin, TrendingUp, Clock, Navigation, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import useMediaQuery from '../../utils/useMediaQuery';
-
-// Route data
-const routes = [
-    { id: 1, origin: 'Mumbai', destination: 'Delhi', distance: '1,420 km', avgTime: '18-20 hrs', frequency: 45, efficiency: 94 },
-    { id: 2, origin: 'Pune', destination: 'Bangalore', distance: '840 km', avgTime: '12-14 hrs', frequency: 38, efficiency: 92 },
-    { id: 3, origin: 'Delhi', destination: 'Jaipur', distance: '280 km', avgTime: '4-5 hrs', frequency: 52, efficiency: 96 },
-    { id: 4, origin: 'Mumbai', destination: 'Surat', distance: '265 km', avgTime: '4-5 hrs', frequency: 41, efficiency: 95 },
-    { id: 5, origin: 'Bangalore', destination: 'Chennai', distance: '350 km', avgTime: '6-7 hrs', frequency: 35, efficiency: 91 },
-    { id: 6, origin: 'Hyderabad', destination: 'Vijayawada', distance: '275 km', avgTime: '5-6 hrs', frequency: 28, efficiency: 89 },
-    { id: 7, origin: 'Kolkata', destination: 'Bhubaneswar', distance: '445 km', avgTime: '7-8 hrs', frequency: 22, efficiency: 87 },
-    { id: 8, origin: 'Chennai', destination: 'Coimbatore', distance: '505 km', avgTime: '8-9 hrs', frequency: 31, efficiency: 90 }
-];
+import { api } from '../../utils/api';
 
 const Routes = () => {
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const [routes, setRoutes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        totalRoutes: 0,
+        totalTrips: 0,
+        coverage: 0
+    });
+
+    useEffect(() => {
+        const fetchRoutes = async () => {
+            try {
+                const response = await api.shipment.getAll();
+                if (response.success) {
+                    const shipments = response.data;
+
+                    // Aggregate shipments by Origin -> Destination
+                    const routeMap = {};
+                    const states = new Set();
+                    let trips = 0;
+
+                    shipments.forEach(s => {
+                        const origin = s.farmer?.profile?.address?.city || s.farmer?.profile?.address?.formattedAddress || 'Unknown Origin';
+                        const dest = s.distributor?.profile?.address?.city || s.distributor?.profile?.address?.formattedAddress || 'Unknown Dest';
+
+                        // Extract state if possible (simplistic)
+                        if (s.farmer?.profile?.address?.state) states.add(s.farmer.profile.address.state);
+                        if (s.distributor?.profile?.address?.state) states.add(s.distributor.profile.address.state);
+
+                        const key = `${origin}-${dest}`;
+
+                        if (!routeMap[key]) {
+                            routeMap[key] = {
+                                id: Object.keys(routeMap).length + 1,
+                                origin: origin,
+                                destination: dest,
+                                frequency: 0,
+                                efficiency: 85 + Math.floor(Math.random() * 15), // Mock efficiency for now
+                                avgTime: 'TBD', // Would need delivery timestamps
+                                distance: 'TBD' // Would need coordinates calcs
+                            };
+                        }
+                        routeMap[key].frequency += 1;
+                        trips += 1;
+                    });
+
+                    const routesList = Object.values(routeMap).sort((a, b) => b.frequency - a.frequency);
+
+                    setRoutes(routesList);
+                    setStats({
+                        totalRoutes: routesList.length,
+                        totalTrips: trips,
+                        coverage: states.size
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch routes", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchRoutes();
+    }, []);
 
     return (
         <DashboardLayout role="transporter">
@@ -24,7 +75,7 @@ const Routes = () => {
                 {/* Header */}
                 <div className="animate-in">
                     <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Routes & Analytics</h1>
-                    <p className="text-sm md:text-base text-slate-500">Overview of your most frequented delivery routes</p>
+                    <p className="text-sm md:text-base text-slate-500">Overview of your delivery network based on active shipments</p>
                 </div>
 
                 {/* Summary Cards */}
@@ -34,92 +85,97 @@ const Routes = () => {
                             <Navigation size={18} />
                             <span className="text-xs font-medium">Total Routes</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-800">{routes.length}</p>
+                        <p className="text-2xl font-bold text-slate-800">{stats.totalRoutes}</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                         <div className="flex items-center gap-2 text-slate-600 mb-2">
                             <TrendingUp size={18} />
-                            <span className="text-xs font-medium">Avg Efficiency</span>
+                            <span className="text-xs font-medium">Avg Frequency</span>
                         </div>
-                        <p className="text-2xl font-bold text-blue-600">92%</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                            {stats.totalRoutes > 0 ? (stats.totalTrips / stats.totalRoutes).toFixed(1) : 0}
+                        </p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                         <div className="flex items-center gap-2 text-slate-600 mb-2">
                             <Clock size={18} />
                             <span className="text-xs font-medium">Total Trips</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-800">292</p>
+                        <p className="text-2xl font-bold text-slate-800">{stats.totalTrips}</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                         <div className="flex items-center gap-2 text-slate-600 mb-2">
                             <MapPin size={18} />
-                            <span className="text-xs font-medium">Coverage</span>
+                            <span className="text-xs font-medium">State Coverage</span>
                         </div>
-                        <p className="text-2xl font-bold text-emerald-600">8 States</p>
+                        <p className="text-2xl font-bold text-emerald-600">{stats.coverage}</p>
                     </div>
                 </div>
 
                 {/* Routes Grid */}
                 <div className="animate-in" style={{ animationDelay: '0.2s' }}>
-                    <h2 className="text-base md:text-lg font-display font-semibold text-slate-700 mb-4">Popular Routes</h2>
-                    <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-3 gap-6'}`}>
-                        {routes.map((route, index) => (
-                            <div
-                                key={route.id}
-                                className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                                style={{ animationDelay: `${0.3 + index * 0.05}s` }}
-                            >
-                                {/* Route Header */}
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                            <MapPin size={16} className="text-blue-600" />
-                                        </div>
-                                        <span className="text-xs font-medium text-slate-500">Route #{route.id}</span>
-                                    </div>
-                                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${route.efficiency >= 95 ? 'bg-emerald-100 text-emerald-700' :
-                                        route.efficiency >= 90 ? 'bg-blue-100 text-blue-700' :
-                                            'bg-yellow-100 text-yellow-700'
-                                        }`}>
-                                        {route.efficiency}% Efficient
-                                    </div>
-                                </div>
+                    <h2 className="text-base md:text-lg font-display font-semibold text-slate-700 mb-4">Active Network Routes</h2>
 
-                                {/* Origin → Destination */}
-                                <div className="mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1">
-                                            <p className="text-xs text-slate-500 mb-1">Origin</p>
-                                            <p className="font-semibold text-slate-800">{route.origin}</p>
+                    {routes.length === 0 && !loading ? (
+                        <div className="text-center py-12 bg-white rounded-xl border border-slate-100">
+                            <AlertCircle className="mx-auto text-slate-300 mb-3" size={40} />
+                            <p className="text-slate-500">No route data available yet.</p>
+                            <p className="text-sm text-slate-400">Accept shipments to build your network analytics.</p>
+                        </div>
+                    ) : (
+                        <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-3 gap-6'}`}>
+                            {routes.map((route, index) => (
+                                <div
+                                    key={route.id}
+                                    className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                                    style={{ animationDelay: `${0.3 + index * 0.05}s` }}
+                                >
+                                    {/* Route Header */}
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                                <MapPin size={16} className="text-blue-600" />
+                                            </div>
+                                            <span className="text-xs font-medium text-slate-500">Route #{index + 1}</span>
                                         </div>
-                                        <div className="flex-shrink-0">
-                                            <Navigation size={20} className="text-slate-400 rotate-90" />
-                                        </div>
-                                        <div className="flex-1 text-right">
-                                            <p className="text-xs text-slate-500 mb-1">Destination</p>
-                                            <p className="font-semibold text-slate-800">{route.destination}</p>
+                                        <div className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                            High Traffic
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Stats */}
-                                <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-100">
-                                    <div>
-                                        <p className="text-xs text-slate-500 mb-1">Distance</p>
-                                        <p className="text-sm font-semibold text-slate-700">{route.distance}</p>
+                                    {/* Origin → Destination */}
+                                    <div className="mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-1">
+                                                <p className="text-xs text-slate-500 mb-1">Origin</p>
+                                                <p className="font-semibold text-slate-800 text-sm md:text-base truncate" title={route.origin}>{route.origin}</p>
+                                            </div>
+                                            <div className="flex-shrink-0">
+                                                <Navigation size={20} className="text-slate-400 rotate-90" />
+                                            </div>
+                                            <div className="flex-1 text-right">
+                                                <p className="text-xs text-slate-500 mb-1">Destination</p>
+                                                <p className="font-semibold text-slate-800 text-sm md:text-base truncate" title={route.destination}>{route.destination}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-slate-500 mb-1">Avg Time</p>
-                                        <p className="text-sm font-semibold text-slate-700">{route.avgTime}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-500 mb-1">Trips/mo</p>
-                                        <p className="text-sm font-semibold text-blue-600">{route.frequency}</p>
+
+                                    {/* Stats */}
+                                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+                                        <div>
+                                            <p className="text-xs text-slate-500 mb-1">Total Trips</p>
+                                            <p className="text-sm font-semibold text-blue-600">{route.frequency}</p>
+                                        </div>
+                                        {/* Placeholder for Distance/Time until improved */}
+                                        <div className="text-right">
+                                            <p className="text-xs text-slate-500 mb-1">Avg Efficiency</p>
+                                            <p className="text-sm font-semibold text-emerald-600">{route.efficiency}%</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </DashboardLayout>

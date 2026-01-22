@@ -6,6 +6,8 @@ import Select from '../../components/ui/Select';
 import { api, authHelpers } from '../../utils/api';
 import { indiaStates, cropTypes, landTypes } from '../../data/indiaGeoData';
 
+import PlacesAutocomplete from '../../components/ui/PlacesAutocomplete';
+
 const Settings = () => {
     const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(true);
@@ -20,6 +22,7 @@ const Settings = () => {
         state: '',
         district: '',
         village: '',
+        address: null, // New Address Object
 
         // Farm
         landSize: '',
@@ -59,6 +62,7 @@ const Settings = () => {
                     state: profile.state || '',
                     district: profile.district || '',
                     village: profile.village || '',
+                    address: profile.address || null, // Load address
 
                     // Farm
                     landSize: profile.landSize || '',
@@ -116,8 +120,10 @@ const Settings = () => {
                 fullName: formData.fullName,
                 mobile: formData.mobile,
                 state: formData.state,
+                state: formData.state,
                 district: formData.district,
                 village: formData.village,
+                address: formData.address, // Save Address Object
 
                 landSize: parseFloat(formData.landSize),
                 landType: formData.landType,
@@ -219,7 +225,89 @@ const Settings = () => {
                                             <input type="email" name="email" value={formData.email} disabled className="w-full p-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed" />
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                                </section>
+
+                                {/* Location Section */}
+                                <section className="space-y-4">
+                                    <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
+                                        <MapPin size={20} className="text-red-500" /> Farm Location
+                                    </h2>
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100">
+                                            Search for your farm location to enable precise navigation for transporters.
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-slate-700">Search Address</label>
+                                            <PlacesAutocomplete
+                                                value={formData.address}
+                                                onChange={(addr) => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        address: addr,
+                                                        // Auto-fill legacy fields if possible
+                                                        state: addr.state || prev.state,
+                                                        district: addr.city || prev.district, // Approximate mapping
+                                                        village: addr.city || prev.village
+                                                    }));
+                                                }}
+                                                placeholder="Search for your farm location..."
+                                            />
+                                        </div>
+                                        {formData.address?.formattedAddress && (
+                                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm text-slate-600">
+                                                <strong>Selected:</strong> {formData.address.formattedAddress}
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700">Latitude</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 12.9716"
+                                                    value={formData.address?.coordinates?.lat || ''}
+                                                    onChange={(e) => {
+                                                        const newLat = parseFloat(e.target.value);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            address: {
+                                                                ...prev.address,
+                                                                coordinates: {
+                                                                    ...prev.address?.coordinates,
+                                                                    lat: isNaN(newLat) ? '' : newLat
+                                                                }
+                                                            }
+                                                        }));
+                                                    }}
+                                                    className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sage-400 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700">Longitude</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 77.5946"
+                                                    value={formData.address?.coordinates?.lng || ''}
+                                                    onChange={(e) => {
+                                                        const newLng = parseFloat(e.target.value);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            address: {
+                                                                ...prev.address,
+                                                                coordinates: {
+                                                                    ...prev.address?.coordinates,
+                                                                    lng: isNaN(newLng) ? '' : newLng
+                                                                }
+                                                            }
+                                                        }));
+                                                    }}
+                                                    className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sage-400 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium text-slate-700">State</label>
                                             <select
@@ -422,8 +510,8 @@ const Settings = () => {
                         )}
                     </div>
                 </div>
-            </div>
-        </DashboardLayout>
+            </div >
+        </DashboardLayout >
     );
 };
 

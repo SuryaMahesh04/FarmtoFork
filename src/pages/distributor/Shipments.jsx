@@ -6,11 +6,9 @@ import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import useMediaQuery from '../../utils/useMediaQuery';
+import api from '../../utils/api';
 
-import { api } from '../../utils/api';
-// Mock data removed
-
-const Shipments = () => {
+const DistributorShipments = () => {
     const navigate = useNavigate();
     const isMobile = useMediaQuery('(max-width: 768px)');
     const [filterStatus, setFilterStatus] = useState('all');
@@ -18,98 +16,82 @@ const Shipments = () => {
     const [allShipments, setAllShipments] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchShipments = async () => {
-            try {
-                const response = await api.shipment.getAll();
-                if (response.success) {
-                    // Map backend data to table format
-                    const mappedData = response.data.map(s => ({
-                        id: s.shipmentId,
-                        _id: s._id,
-                        origin: s.farmer?.profile?.address?.city || s.farmer?.profile?.address?.formattedAddress || 'Origin Pending',
-                        destination: s.distributor?.profile?.address?.city || s.distributor?.profile?.address?.formattedAddress || 'Destination Pending',
-                        cargo: `${s.batch?.crop || 'Crop'} - ${s.batch?.quantity || 0}T`,
-                        vehicle: 'Not Assigned',
-                        eta: 'TBD',
-                        status: s.status,
-                        transporterStatus: s.transporterStatus
-                    }));
-                    setAllShipments(mappedData);
-                }
-            } catch (error) {
-                console.error('Failed to fetch shipments', error);
-            } finally {
-                setLoading(false);
+    const [processingId, setProcessingId] = useState(null);
+
+    const fetchShipments = async () => {
+        try {
+            // api.shipment.getAll() automatically filters by the logged-in user's role/ID on the backend
+            const response = await api.shipment.getAll();
+            if (response.success) {
+                // Map backend data to table format
+                const mappedData = response.data.map(s => ({
+                    id: s.shipmentId,
+                    _id: s._id, // Keep the actual mongo ID for navigation
+                    origin: s.origin?.city || s.farmer?.profile?.city || 'Origin',
+                    destination: s.destination?.city || s.distributor?.profile?.city || 'Destination',
+                    cargo: `${s.batch?.crop || 'Crop'} - ${s.batch?.quantity || 0}T`,
+                    driver: s.driver?.name || 'Unassigned',
+                    eta: s.estimatedArrival || 'TBD',
+                    status: s.status
+                }));
+                setAllShipments(mappedData);
             }
-        };
+        } catch (error) {
+            console.error('Failed to fetch shipments', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchShipments();
     }, []);
+
+    const handleAction = async (e, shipmentId, status) => {
+        e.stopPropagation(); // Prevent row click navigation
+        setProcessingId(shipmentId);
+        try {
+            const response = await api.shipment.updateStatus(shipmentId, status);
+            if (response.success) {
+                fetchShipments(); // Refresh table
+            }
+        } catch (error) {
+            console.error(`Failed to ${status} shipment`, error);
+        } finally {
+            setProcessingId(null);
+        }
+    };
 
     const columns = [
         { header: 'Shipment ID', accessor: 'id' },
         { header: 'Origin', accessor: 'origin' },
         { header: 'Destination', accessor: 'destination' },
         { header: 'Cargo', accessor: 'cargo' },
-        { header: 'Vehicle', accessor: 'vehicle' },
-        { header: 'ETA', accessor: 'eta' },
+        { header: 'Driver', accessor: 'driver' },
         { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
         {
             header: 'Actions',
             accessor: 'actions',
-            render: (row) => {
-                // Show actions if shipment is globally pending and WE haven't accepted yet
-                if (row.status === 'pending' && row.transporterStatus !== 'accepted') {
-                    return (
-                        <div className="flex gap-2">
-                            <Button
-                                size="sm"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(row._id, 'accepted');
-                                }}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-xs px-2 py-1 h-8"
-                            >
-                                Accept
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(row._id, 'rejected');
-                                }}
-                                className="text-red-600 border-red-200 hover:bg-red-50 text-xs px-2 py-1 h-8"
-                            >
-                                Decline
-                            </Button>
-                        </div>
-                    );
-                }
-                return null;
-            }
+            render: (row) => row.status === 'pending' && (
+                <div className="flex gap-2">
+                    <button
+                        onClick={(e) => handleAction(e, row._id, 'accepted')}
+                        disabled={processingId === row._id}
+                        className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 text-xs font-medium disabled:opacity-50"
+                    >
+                        Accept
+                    </button>
+                    <button
+                        onClick={(e) => handleAction(e, row._id, 'rejected')}
+                        disabled={processingId === row._id}
+                        className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-xs font-medium disabled:opacity-50"
+                    >
+                        Decline
+                    </button>
+                </div>
+            )
         }
     ];
-
-    const handleStatusUpdate = async (id, status) => {
-        try {
-            const response = await api.shipment.updateStatus(id, status);
-            if (response.success) {
-                // Refresh list
-                const updatedList = allShipments.map(s => {
-                    if (s._id === id) {
-                        return { ...s, status: status === 'accepted' ? s.status : 'rejected', transporterStatus: status };
-                    }
-                    return s;
-                });
-                setAllShipments(updatedList);
-                // Re-fetch to be safe and get full fresh data
-                // fetchShipments(); // Optional
-            }
-        } catch (error) {
-            console.error('Action failed', error);
-        }
-    };
 
     // Filter shipments
     const filteredShipments = allShipments.filter(shipment => {
@@ -122,26 +104,26 @@ const Shipments = () => {
 
     const statusCounts = {
         all: allShipments.length,
+        pending: allShipments.filter(s => s.status === 'pending').length,
         in_transit: allShipments.filter(s => s.status === 'in_transit').length,
-        scheduled: allShipments.filter(s => s.status === 'scheduled').length,
         delivered: allShipments.filter(s => s.status === 'delivered').length
     };
 
     return (
-        <DashboardLayout role="transporter">
+        <DashboardLayout role="distributor">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="animate-in">
-                    <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">All Shipments</h1>
-                    <p className="text-sm md:text-base text-slate-500">Manage and track all your shipments</p>
+                    <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Shipment Requests</h1>
+                    <p className="text-sm md:text-base text-slate-500">Manage incoming shipments and requests</p>
                 </div>
 
                 {/* Status Filter Tabs */}
                 <div className={`${isMobile ? 'flex overflow-x-auto gap-2 pb-2' : 'flex gap-4'} animate-in`} style={{ animationDelay: '0.1s' }}>
                     {[
-                        { key: 'all', label: 'All Shipments', count: statusCounts.all },
+                        { key: 'all', label: 'All', count: statusCounts.all },
+                        { key: 'pending', label: 'Requests', count: statusCounts.pending },
                         { key: 'in_transit', label: 'In Transit', count: statusCounts.in_transit },
-                        { key: 'scheduled', label: 'Scheduled', count: statusCounts.scheduled },
                         { key: 'delivered', label: 'Delivered', count: statusCounts.delivered }
                     ].map(tab => (
                         <button
@@ -149,12 +131,12 @@ const Shipments = () => {
                             onClick={() => setFilterStatus(tab.key)}
                             className={`${isMobile ? 'px-4 py-2 text-sm whitespace-nowrap' : 'px-6 py-3'
                                 } rounded-lg font-medium transition-all ${filterStatus === tab.key
-                                    ? 'bg-blue-100 text-blue-800 shadow-sm'
+                                    ? 'bg-emerald-100 text-emerald-800 shadow-sm'
                                     : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                                 }`}
                         >
                             {tab.label}
-                            <span className={`ml-2 ${isMobile ? 'text-xs' : 'text-sm'} ${filterStatus === tab.key ? 'text-blue-600' : 'text-slate-400'
+                            <span className={`ml-2 ${isMobile ? 'text-xs' : 'text-sm'} ${filterStatus === tab.key ? 'text-emerald-600' : 'text-slate-400'
                                 }`}>
                                 ({tab.count})
                             </span>
@@ -168,10 +150,10 @@ const Shipments = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                         <input
                             type="text"
-                            placeholder="Search by shipment ID, origin, or destination..."
+                            placeholder="Search by ID, origin, or destination..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:outline-none bg-white"
+                            className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 focus:outline-none bg-white"
                         />
                     </div>
                 </div>
@@ -191,7 +173,7 @@ const Shipments = () => {
                             <DataTable
                                 columns={columns}
                                 data={filteredShipments}
-                                onRowClick={(row) => navigate(`/transporter/shipment/${row._id}`)}
+                                onRowClick={(row) => navigate(`/distributor/shipment/${row._id}`)}
                             />
                         </div>
                     </div>
@@ -208,4 +190,4 @@ const Shipments = () => {
     );
 };
 
-export default Shipments;
+export default DistributorShipments;

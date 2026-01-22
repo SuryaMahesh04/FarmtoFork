@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { Building2, Package, FileText, CheckCircle, Database, Lock } from 'lucide-react';
+import { api, authHelpers } from '../../../utils/api';
 import StepWizard from '../StepWizard';
 import FormInput from '../../ui/FormInput';
 import Select from '../../ui/Select';
@@ -26,9 +27,65 @@ const DistributorOnboarding = () => {
 
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 0));
 
-    const onSubmit = (data) => {
-        console.log('Distributor Registered:', data);
-        window.location.href = '/distributor';
+    const onSubmit = async (data) => {
+        try {
+            // 1. Attempt Registration
+            const authData = {
+                email: data.emailAccount,
+                password: data.password,
+                role: 'distributor'
+            };
+
+            let authResponse;
+            try {
+                authResponse = await api.auth.register(authData);
+            } catch (regError) {
+                // If registration fails (e.g., user exists), try logging in
+                console.log("Registration failed, trying login...", regError);
+                authResponse = await api.auth.login({
+                    email: data.emailAccount,
+                    password: data.password,
+                    role: 'distributor' // Optional but good for validation
+                });
+            }
+
+            if (authResponse && authResponse.success) {
+                // 2. Save Token & User
+                authHelpers.saveToken(authResponse.data.token);
+                authHelpers.saveUser(authResponse.data.user);
+
+                // 3. Prepare Profile Data
+                const profileData = {
+                    fullName: data.ownerName,
+                    companyName: data.businessName,
+                    ownerName: data.ownerName,
+                    mobile: data.mobile,
+                    state: data.state,
+                    city: data.location,
+                    warehouseCapacity: Number(data.capacity),
+                    coldStorageAvailable: data.storageType === 'cold_storage' || data.storageType === 'mixed',
+                    gstNumber: data.gst,
+                    fssaiLicense: data.fssai,
+                    bankAccount: data.bankAccount
+                };
+
+                // 4. Update Profile
+                const profileRes = await api.auth.updateProfile(profileData);
+
+                if (profileRes.success) {
+                    // Update local user with full profile
+                    const currentUser = authHelpers.getUser();
+                    const updatedUser = { ...currentUser, profile: profileRes.data.profile };
+                    authHelpers.saveUser(updatedUser);
+
+                    // 5. Navigate to Dashboard
+                    window.location.href = '/distributor';
+                }
+            }
+        } catch (error) {
+            console.error('Onboarding Error:', error);
+            alert('Setup failed: ' + (error.message || 'Please check your inputs'));
+        }
     };
 
     const storageTypes = [

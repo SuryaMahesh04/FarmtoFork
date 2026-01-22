@@ -29,6 +29,15 @@ const StatusBadge = ({ status, type = 'default' }) => {
 
     const finalType = type === 'default' ? getStyle(status) : type;
 
+    // Helper to format status text
+    const formatStatus = (s) => {
+        if (!s) return 'Unknown';
+        return s
+            .replace(/_/g, ' ')
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+    };
+
     return (
         <span className={`
       inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border
@@ -38,7 +47,7 @@ const StatusBadge = ({ status, type = 'default' }) => {
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${dotColors[finalType]}`}></span>
                 <span className={`relative inline-flex rounded-full h-2 w-2 ${dotColors[finalType]}`}></span>
             </span>
-            {status}
+            {formatStatus(status)}
         </span>
     );
 };

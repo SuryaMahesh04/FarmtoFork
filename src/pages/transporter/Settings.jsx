@@ -3,18 +3,52 @@ import { User, Bell, Shield, Save, Truck } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 
+import { api, authHelpers } from '../../utils/api';
+import PlacesAutocomplete from '../../components/ui/PlacesAutocomplete';
+
 const Settings = () => {
     const [activeTab, setActiveTab] = useState('profile');
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        name: 'Surya Mahesh',
-        email: 'surya@example.com',
-        phone: '+91 98765 43210',
-        companyName: 'Swift Logistics',
-        fleetSize: '25',
-        licenseNumber: 'TL-MH-2024-001',
+        name: '',
+        email: '',
+        phone: '',
+        companyName: '',
+        fleetSize: '',
+        licenseNumber: '',
+        address: null, // New Address Object
         notifications: true,
         emailAlerts: false,
     });
+
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            const res = await api.auth.getMe();
+            if (res.success && res.data) {
+                const user = res.data;
+                const profile = user.profile || {};
+                setFormData(prev => ({
+                    ...prev,
+                    name: profile.fullName || '',
+                    email: user.email || '',
+                    phone: profile.mobile || '',
+                    companyName: profile.companyName || '',
+                    fleetSize: profile.fleetSize || '',
+                    licenseNumber: profile.gstNumber || '', // Mapping license to GST for now or appropriate field
+                    address: profile.address || null,
+                }));
+            }
+        } catch (error) {
+            console.error('Fetch profile error', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const tabs = [
         { id: 'profile', label: 'Profile Settings', icon: User },
@@ -30,8 +64,28 @@ const Settings = () => {
         }));
     };
 
-    const handleSave = () => {
-        alert('Settings saved successfully!');
+    const handleSave = async () => {
+        try {
+            setLoading(true);
+            const profileUpdate = {
+                fullName: formData.name,
+                mobile: formData.phone,
+                companyName: formData.companyName,
+                fleetSize: Number(formData.fleetSize),
+                gstNumber: formData.licenseNumber,
+                address: formData.address
+            };
+
+            const res = await api.auth.updateProfile(profileUpdate);
+            if (res.success) {
+                authHelpers.saveUser(res.data);
+                alert('Settings saved successfully!');
+            }
+        } catch (error) {
+            alert('Failed to save settings: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -126,6 +180,74 @@ const Settings = () => {
                                             onChange={handleChange}
                                             className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none"
                                         />
+                                    </div>
+                                    <div className="space-y-4 md:col-span-2">
+                                        <label className="text-sm font-medium text-slate-700">Company Location</label>
+                                        <div className="p-3 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100 mb-2">
+                                            Search for your company location for better route planning.
+                                        </div>
+                                        <PlacesAutocomplete
+                                            value={formData.address}
+                                            onChange={(addr) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    address: addr
+                                                }));
+                                            }}
+                                            placeholder="Search for your company location..."
+                                        />
+                                        {formData.address?.formattedAddress && (
+                                            <div className="text-xs text-slate-500 mt-1">
+                                                Selected: {formData.address.formattedAddress}
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-2 gap-4 mt-2">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700">Latitude</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 12.9716"
+                                                    value={formData.address?.coordinates?.lat || ''}
+                                                    onChange={(e) => {
+                                                        const newLat = parseFloat(e.target.value);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            address: {
+                                                                ...prev.address,
+                                                                coordinates: {
+                                                                    ...prev.address?.coordinates,
+                                                                    lat: isNaN(newLat) ? '' : newLat
+                                                                }
+                                                            }
+                                                        }));
+                                                    }}
+                                                    className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700">Longitude</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 77.5946"
+                                                    value={formData.address?.coordinates?.lng || ''}
+                                                    onChange={(e) => {
+                                                        const newLng = parseFloat(e.target.value);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            address: {
+                                                                ...prev.address,
+                                                                coordinates: {
+                                                                    ...prev.address?.coordinates,
+                                                                    lng: isNaN(newLng) ? '' : newLng
+                                                                }
+                                                            }
+                                                        }));
+                                                    }}
+                                                    className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

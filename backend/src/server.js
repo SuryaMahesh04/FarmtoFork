@@ -23,6 +23,9 @@ const farmerRoutes = require('./routes/farmer');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/farmer', farmerRoutes);
+app.use('/api/distributor', require('./routes/distributor'));
+app.use('/api/shipments', require('./routes/shipment'));
+app.use('/api/notifications', require('./routes/notification'));
 
 // Health check route
 app.get('/api/health', (req, res) => {
