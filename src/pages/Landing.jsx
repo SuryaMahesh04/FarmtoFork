@@ -158,12 +158,10 @@ const Landing = () => {
                         The world's first decentralized agriculture ecosystem. Empowering farmers and consumers with <span className="text-emerald-700 font-bold bg-emerald-50 px-1 rounded">100% transparency</span> and verified quality.
                     </motion.p>
 
-                    {/* Stats - Responsive Grid */}
-                    <div className={`${isMobile ? 'grid grid-cols-3 gap-4 py-4 mb-8' : 'flex flex-wrap justify-center gap-12 py-4 mb-4'} max-w-md md:max-w-none mx-auto`}>
-                        <StatItem value="10k+" label="Farmers" />
-                        <StatItem value="50M+" label="Products" />
-                        <StatItem value="100%" label="Transparent" />
-                    </div>
+
+
+                    {/* Spacer to maintain gap after removing stats */}
+                    <div className="h-24 md:h-20"></div>
 
                     {/* Mobile CTA Button - App Style */}
                     {isMobile && (
@@ -508,12 +506,7 @@ const Landing = () => {
     );
 };
 
-const StatItem = ({ value, label }) => (
-    <div className="text-center">
-        <div className="text-2xl md:text-4xl font-display font-bold text-slate-900 mb-0.5 md:mb-1">{value}</div>
-        <div className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</div>
-    </div>
-);
+
 
 const FeatureItem = ({ icon, title, desc }) => (
     <div className="flex gap-3 md:gap-4">
