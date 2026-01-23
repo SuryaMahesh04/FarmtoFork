@@ -71,7 +71,22 @@ const userSchema = new mongoose.Schema({
         bankAccount: String,
         ifscCode: String,
         licenseDocumentUrl: String,
-        landDocumentUrl: String
+        landDocumentUrl: String,
+
+        // Unified Address for Maps
+        address: {
+            formattedAddress: String,
+            street: String,
+            city: String,
+            state: String,
+            zipCode: String,
+            country: String,
+            coordinates: {
+                lat: Number,
+                lng: Number
+            },
+            placeId: String
+        }
     }
 }, {
     timestamps: true
@@ -94,7 +109,6 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 // Indexes
-userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ 'profile.aadhaarNumber': 1 }, { sparse: true });
 

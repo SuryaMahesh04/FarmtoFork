@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Warehouse, TrendingUp, ClipboardCheck, Truck, Plus } from 'lucide-react';
 import {
     PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, ResponsiveContainer,
     AreaChart, Area, CartesianGrid, LineChart, Line
 } from 'recharts';
+import { api, authHelpers } from '../../utils/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import MetricCard from '../../components/ui/MetricCard';
 import MobileMetricCard from '../../components/ui/MobileMetricCard';
@@ -16,42 +17,52 @@ import Button from '../../components/ui/Button';
 import { chartTheme } from '../../utils/chartConfig';
 import useMediaQuery from '../../utils/useMediaQuery';
 
-// Dummy data for distributor dashboard
-const inventoryTrendData = [
-    { month: 'Jul', stock: 720, capacity: 1000 },
-    { month: 'Aug', stock: 780, capacity: 1000 },
-    { month: 'Sep', stock: 850, capacity: 1000 },
-    { month: 'Oct', stock: 820, capacity: 1000 },
-    { month: 'Nov', stock: 890, capacity: 1000 },
-    { month: 'Dec', stock: 850, capacity: 1000 }
-];
-
-const productCategoryData = [
-    { name: 'Grains', value: 350, color: '#5c9449' },
-    { name: 'Vegetables', value: 200, color: '#f5deb3' },
-    { name: 'Fruits', value: 150, color: '#b4d7e8' },
-    { name: 'Dairy', value: 100, color: '#d4a574' },
-    { name: 'Others', value: 50, color: '#cbd5e1' }
-];
-
-const qualityMetricsData = [
-    { category: 'Grains', passed: 340, failed: 10 },
-    { category: 'Vegetables', passed: 190, failed: 10 },
-    { category: 'Fruits', passed: 145, failed: 5 },
-    { category: 'Dairy', passed: 98, failed: 2 }
-];
-
-const inventoryData = [
-    { id: 'INV-001', item: 'Wheat', stock: '120T', warehouse: 'Zone A', expiry: '2025-06-15', status: 'good' },
-    { id: 'INV-002', item: 'Rice (Basmati)', stock: '85T', warehouse: 'Zone A', expiry: '2025-05-20', status: 'good' },
-    { id: 'INV-003', item: 'Tomatoes', stock: '15T', warehouse: 'Zone B (Cold)', expiry: '2024-12-20', status: 'warning' },
-    { id: 'INV-004', item: 'Onions', stock: '40T', warehouse: 'Zone B', expiry: '2025-02-10', status: 'good' },
-    { id: 'INV-005', item: 'Milk Products', stock: '8T', warehouse: 'Cold Storage', expiry: '2024-12-25', status: 'critical' }
-];
+// Dummy data replaced by real API data
 
 const DistributorDashboard = () => {
     const navigate = useNavigate();
     const isMobile = useMediaQuery('(max-width: 768px)');
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [stats, setStats] = useState(null);
+    const [inventory, setInventory] = useState([]);
+    const [analytics, setAnalytics] = useState(null);
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const currentUser = authHelpers.getUser();
+                setUser(currentUser);
+
+                const [statsRes, inventoryRes, analyticsRes, userRes] = await Promise.all([
+                    api.distributor.getStats(),
+                    api.distributor.getInventory(),
+                    api.distributor.getAnalytics(),
+                    api.auth.getMe()
+                ]);
+
+                if (statsRes.success) setStats(statsRes.data);
+                if (inventoryRes.success) setInventory(inventoryRes.data);
+                if (analyticsRes.success) setAnalytics(analyticsRes.data);
+                if (userRes.success) {
+                    setUser(userRes.data);
+                    // Update local storage to keep it fresh
+                    authHelpers.saveUser(userRes.data);
+                }
+
+            } catch (err) {
+                console.error("Dashboard fetch error:", err);
+                setError("Failed to load dashboard data");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const columns = [
         { header: 'Item Code', accessor: 'id' },
@@ -66,14 +77,36 @@ const DistributorDashboard = () => {
     const chartHeight = isMobile ? 220 : 300;
     const barChartHeight = isMobile ? 200 : 250;
 
+    if (loading) {
+        return (
+            <DashboardLayout role="distributor">
+                <div className="flex items-center justify-center h-96">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+                        <p className="text-slate-600">Loading dashboard...</p>
+                    </div>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    // Fallback data if API returns empty/null to avoid crashes during initial dev
+    const inventoryTrendData = analytics?.inventoryTrend || [];
+    const productCategoryData = analytics?.productDistribution || [];
+    const qualityMetricsData = analytics?.qualityMetrics || [];
+
     return (
         <DashboardLayout role="distributor">
             <div className="space-y-6">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in">
                     <div>
-                        <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Warehouse Operations 📦</h1>
-                        <p className="text-sm md:text-base text-slate-500">Inventory management and distribution hub</p>
+                        <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">
+                            Warehouse Operations 📦
+                        </h1>
+                        <p className="text-sm md:text-base text-slate-500">
+                            Welcome back, {user?.profile?.fullName || 'Distributor'}
+                        </p>
                     </div>
                     {!isMobile && (
                         <Button icon={Plus} onClick={() => navigate('/distributor/inventory')}>Add Item</Button>
@@ -84,17 +117,17 @@ const DistributorDashboard = () => {
                 <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-4 gap-6'}`}>
                     {isMobile ? (
                         <>
-                            <MobileMetricCard title="Total Inventory" value={850} icon={Warehouse} trend={10} color="wheat" delay={0.1} />
-                            <MobileMetricCard title="Incoming Batches" value={5} icon={Truck} trend={0} color="sage" delay={0.2} />
-                            <MobileMetricCard title="Quality Passed" value="98%" icon={ClipboardCheck} trend={2} color="sky" delay={0.3} />
-                            <MobileMetricCard title="Storage Used" value="85%" icon={Package} trend={-5} color="terra" delay={0.4} />
+                            <MobileMetricCard title="Total Inventory" value={`${stats?.totalInventory || 0}kg`} icon={Warehouse} trend={10} color="wheat" delay={0.1} />
+                            <MobileMetricCard title="Incoming Batches" value={stats?.incomingBatches || 0} icon={Truck} trend={0} color="sage" delay={0.2} />
+                            <MobileMetricCard title="Quality Passed" value={`${stats?.qualityScore || 0}%`} icon={ClipboardCheck} trend={2} color="sky" delay={0.3} />
+                            <MobileMetricCard title="Storage Used" value={`${stats?.storageUsed || 0}%`} icon={Package} trend={-5} color="terra" delay={0.4} />
                         </>
                     ) : (
                         <>
-                            <MetricCard title="Total Inventory" value={850} icon={Warehouse} trend={10} color="wheat" delay={0.1} />
-                            <MetricCard title="Incoming Batches" value={5} icon={Truck} trend={0} color="sage" delay={0.2} />
-                            <MetricCard title="Quality Passed" value={98} icon={ClipboardCheck} trend={2} color="sky" delay={0.3} />
-                            <MetricCard title="Storage Used" value={85} icon={Package} trend={-5} color="terra" delay={0.4} />
+                            <MetricCard title="Total Inventory" value={stats?.totalInventory || 0} unit=" kg" icon={Warehouse} trend={10} color="wheat" delay={0.1} />
+                            <MetricCard title="Incoming Batches" value={stats?.incomingBatches || 0} icon={Truck} trend={0} color="sage" delay={0.2} />
+                            <MetricCard title="Quality Passed" value={stats?.qualityScore || 0} unit="%" icon={ClipboardCheck} trend={2} color="sky" delay={0.3} />
+                            <MetricCard title="Storage Used" value={stats?.storageUsed || 0} unit="%" icon={Package} trend={-5} color="terra" delay={0.4} />
                         </>
                     )}
                 </div>
@@ -122,7 +155,7 @@ const DistributorDashboard = () => {
                                     stroke={chartTheme.colors.wheat[0]}
                                     fillOpacity={1}
                                     fill="url(#colorStock)"
-                                    name="Stock Level (T)"
+                                    name="Stock Level (kg)"
                                 />
                                 <Area
                                     type="monotone"
@@ -131,7 +164,7 @@ const DistributorDashboard = () => {
                                     fillOpacity={0.1}
                                     fill="transparent"
                                     strokeDasharray="5 5"
-                                    name="Max Capacity (T)"
+                                    name="Max Capacity (kg)"
                                 />
                             </AreaChart>
                         </ChartCardComponent>
@@ -176,7 +209,7 @@ const DistributorDashboard = () => {
                             </div>
                         </ChartCardComponent>
 
-                        {/* Warehouse Zones */}
+                        {/* Warehouse Zones - Keeping static for now as we don't have zone data in backend yet */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                             <h3 className="font-semibold text-slate-800 mb-4">Warehouse Zones</h3>
                             <div className="space-y-4">
@@ -197,11 +230,18 @@ const DistributorDashboard = () => {
                         )}
                     </div>
                     <div className={isMobile ? 'overflow-x-auto' : ''}>
-                        <DataTable
-                            columns={columns}
-                            data={inventoryData}
-                            onRowClick={(row) => navigate(`/distributor/inventory`)}
-                        />
+                        {inventory.length > 0 ? (
+                            <DataTable
+                                columns={columns}
+                                data={inventory}
+                                onRowClick={(row) => navigate(`/distributor/inventory`)}
+                            />
+                        ) : (
+                            <div className="text-center py-10 bg-white rounded-xl border border-dashed border-slate-300">
+                                <Package className="mx-auto text-slate-300 mb-2" size={48} />
+                                <p className="text-slate-500">No inventory available</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -81,6 +81,37 @@ export const api = {
 
         getAnalytics: () => api.request('/farmer/analytics'),
     },
+
+    // Distributor APIs
+    distributor: {
+        getStats: () => api.request('/distributor/stats'),
+        getInventory: () => api.request('/distributor/inventory'),
+        getIncoming: () => api.request('/distributor/incoming'),
+        getAnalytics: () => api.request('/distributor/analytics'),
+    },
+
+    // Shipment APIs
+    shipment: {
+        create: (data) => api.request('/shipments', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        getAll: () => api.request('/shipments'),
+        getDistributors: () => api.request('/shipments/distributors'),
+        getTransporters: () => api.request('/shipments/transporters'),
+        updateStatus: (id, status) => api.request(`/shipments/${id}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ status })
+        }),
+    },
+
+    // Notification APIs
+    notification: {
+        getAll: () => api.request('/notifications'),
+        markAllRead: () => api.request('/notifications/read-all', {
+            method: 'PUT'
+        }),
+    },
 };
 
 // Auth helper functions

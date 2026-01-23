@@ -1,53 +1,86 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, Search, Filter } from 'lucide-react';
+import { api } from '../../utils/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import useMediaQuery from '../../utils/useMediaQuery';
 
-const allInventory = [
-    { id: 'INV-001', item: 'Wheat', category: 'Grains', stock: '120T', warehouse: 'Zone A', expiry: '2025-06-15', status: 'good' },
-    { id: 'INV-002', item: 'Rice (Basmati)', category: 'Grains', stock: '85T', warehouse: 'Zone A', expiry: '2025-05-20', status: 'good' },
-    { id: 'INV-003', item: 'Tomatoes', category: 'Vegetables', stock: '15T', warehouse: 'Zone B (Cold)', expiry: '2024-12-20', status: 'warning' },
-    { id: 'INV-004', item: 'Onions', category: 'Vegetables', stock: '40T', warehouse: 'Zone B', expiry: '2025-02-10', status: 'good' },
-    { id: 'INV-005', item: 'Milk Products', category: 'Dairy', stock: '8T', warehouse: 'Cold Storage', expiry: '2024-12-25', status: 'critical' },
-    { id: 'INV-006', item: 'Apples', category: 'Fruits', stock: '25T', warehouse: 'Zone B (Cold)', expiry: '2025-01-10', status: 'good' },
-    { id: 'INV-007', item: 'Pulses (Moong)', category: 'Grains', stock: '55T', warehouse: 'Zone A', expiry: '2025-08-15', status: 'good' },
-    { id: 'INV-008', item: 'Potatoes', category: 'Vegetables', stock: '30T', warehouse: 'Zone B', expiry: '2025-03-01', status: 'good' },
-    { id: 'INV-009', item: 'Oranges', category: 'Fruits', stock: '12T', warehouse: 'Zone B (Cold)', expiry: '2024-12-22', status: 'warning' },
-    { id: 'INV-010', item: 'Yogurt', category: 'Dairy', stock: '5T', warehouse: 'Cold Storage', expiry: '2024-12-18', status: 'critical' }
-];
+// Dummy data replaced by real API call
 
 const Inventory = () => {
     const isMobile = useMediaQuery('(max-width: 768px)');
     const [filterCategory, setFilterCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [inventory, setInventory] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchInventory();
+    }, []);
+
+    const fetchInventory = async () => {
+        try {
+            setLoading(true);
+            const res = await api.distributor.getInventory();
+            if (res.success) {
+                setInventory(res.data);
+            } else {
+                setError('Failed to load inventory');
+            }
+        } catch (err) {
+            console.error('Inventory fetch error:', err);
+            setError('Failed to load inventory');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const columns = [
         { header: 'Item Code', accessor: 'id' },
         { header: 'Product', accessor: 'item' },
-        { header: 'Category', accessor: 'category' },
+        { header: 'Category', accessor: 'category' }, // Note: Backend might not send category yet, need to handle graceful fallback or hide
         { header: 'Stock Level', accessor: 'stock' },
         { header: 'Warehouse', accessor: 'warehouse' },
         { header: 'Expiry', accessor: 'expiry' },
         { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
     ];
 
-    const filteredInventory = allInventory.filter(item => {
+    // Fallback if category is missing in backend response
+    const safeInventory = inventory.map(item => ({
+        ...item,
+        category: item.category || 'Uncategorized' // or derive from crop type if available
+    }));
+
+    const filteredInventory = safeInventory.filter(item => {
         const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
-        const matchesSearch = item.item.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.id.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (item.item || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (item.id || '').toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
     });
 
     const categoryCounts = {
-        all: allInventory.length,
-        Grains: allInventory.filter(i => i.category === 'Grains').length,
-        Vegetables: allInventory.filter(i => i.category === 'Vegetables').length,
-        Fruits: allInventory.filter(i => i.category === 'Fruits').length,
-        Dairy: allInventory.filter(i => i.category === 'Dairy').length
+        all: safeInventory.length,
+        Grains: safeInventory.filter(i => i.category === 'Grains').length,
+        Vegetables: safeInventory.filter(i => i.category === 'Vegetables').length,
+        Fruits: safeInventory.filter(i => i.category === 'Fruits').length,
+        Dairy: safeInventory.filter(i => i.category === 'Dairy').length
     };
+
+    if (loading) {
+        return (
+            <DashboardLayout role="distributor">
+                <div className="flex items-center justify-center h-96">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+                        <p className="text-slate-600">Loading inventory...</p>
+                    </div>
+                </div>
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout role="distributor">
@@ -116,7 +149,8 @@ const Inventory = () => {
                     {filteredInventory.length === 0 && (
                         <div className="text-center py-12">
                             <Package className="mx-auto text-slate-300 mb-4" size={48} />
-                            <p className="text-slate-500">No inventory items found matching your criteria</p>
+                            <p className="text-slate-500">{error ? error : "No inventory items found matching your criteria"}</p>
+                            {error && <Button onClick={fetchInventory} variant="ghost" className="mt-2 text-blue-600">Retry</Button>}
                         </div>
                     )}
                 </div>

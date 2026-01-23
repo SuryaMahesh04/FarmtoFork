@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Lock, ArrowRight, Sprout, Truck, Store, Database, Shield, LogIn } from 'lucide-react';
+import { User, Lock, ArrowRight } from 'lucide-react';
 import Button from '../components/ui/Button';
 import FormInput from '../components/ui/FormInput';
 import { useForm } from 'react-hook-form';
@@ -11,17 +11,8 @@ import logo from '../assets/logo2.png';
 const LoginPage = () => {
     const navigate = useNavigate();
     const { register, handleSubmit, formState: { errors } } = useForm();
-    const [selectedRole, setSelectedRole] = useState('farmer');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    const roles = [
-        { id: 'farmer', label: 'Farmer', icon: Sprout, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-        { id: 'distributor', label: 'Distributor', icon: Database, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-        { id: 'transporter', label: 'Transporter', icon: Truck, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-        { id: 'retailer', label: 'Retailer', icon: Store, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
-        { id: 'admin', label: 'Admin', icon: Shield, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' }
-    ];
 
     const onSubmit = async (data) => {
         setLoading(true);
@@ -30,8 +21,7 @@ const LoginPage = () => {
         try {
             const response = await api.auth.login({
                 email: data.email,
-                password: data.password,
-                role: selectedRole
+                password: data.password
             });
 
             if (response.success) {
@@ -40,7 +30,7 @@ const LoginPage = () => {
                 authHelpers.saveUser(response.data.user);
 
                 // Navigate to role-specific dashboard
-                navigate(`/${selectedRole}`);
+                navigate(`/${response.data.user.role}`);
             }
         } catch (err) {
             setError(err.message || 'Login failed. Please check your credentials.');
@@ -87,31 +77,7 @@ const LoginPage = () => {
                             <p className="text-slate-600">Enter your credentials to access your account</p>
                         </div>
 
-                        {/* Role Selector */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Select your role</label>
-                            <div className="grid grid-cols-5 gap-2">
-                                {roles.map((role) => (
-                                    <button
-                                        key={role.id}
-                                        type="button"
-                                        onClick={() => setSelectedRole(role.id)}
-                                        className={`
-                                            flex flex-col items-center justify-center p-2 rounded-xl border transition-all duration-200
-                                            ${selectedRole === role.id
-                                                ? `${role.bg} ${role.border} ring-2 ring-emerald-500/20 shadow-sm transform scale-105`
-                                                : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50 text-slate-400'}
-                                        `}
-                                        title={role.label}
-                                    >
-                                        <role.icon size={20} className={`mb-1 ${selectedRole === role.id ? role.color : ''}`} />
-                                        <span className={`text-[10px] font-medium truncate w-full text-center ${selectedRole === role.id ? 'text-slate-700' : ''}`}>
-                                            {role.label}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        {/* Role Selector Removed */}
 
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             <FormInput

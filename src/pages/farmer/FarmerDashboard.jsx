@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sprout, TrendingUp, Package, Leaf, Plus } from 'lucide-react';
+import { Sprout, TrendingUp, Package, Leaf, Plus, Truck } from 'lucide-react';
 import {
     PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis,
     AreaChart, Area, CartesianGrid, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
@@ -130,7 +130,10 @@ const FarmerDashboard = () => {
                         <p className="text-sm md:text-base text-slate-500">Here's what's happening on your farm today.</p>
                     </div>
                     {!isMobile && (
-                        <Button icon={Plus} onClick={() => navigate('/farmer/create-batch')}>Create New Batch</Button>
+                        <div className="flex gap-4">
+                            <Button icon={Truck} variant="secondary" onClick={() => navigate('/farmer/create-shipment')}>Create Shipment</Button>
+                            <Button icon={Plus} onClick={() => navigate('/farmer/create-batch')}>Create New Batch</Button>
+                        </div>
                     )}
                 </div>
 

@@ -40,7 +40,9 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
             case 'farmer':
                 return [
                     { icon: LayoutDashboard, label: 'Dashboard', path: '/farmer' },
+                    { icon: MapPin, label: 'My Farm', path: '/farmer/my-farm' },
                     { icon: Sprout, label: 'My Batches', path: '/farmer/batches' },
+                    { icon: Truck, label: 'Shipments', path: '/farmer/shipments' },
                     { icon: QrCode, label: 'Generate QR', path: '/farmer/scan' },
                     { icon: BarChart3, label: 'Analytics', path: '/farmer/analytics' },
                     ...common
@@ -55,6 +57,7 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
             case 'distributor':
                 return [
                     { icon: LayoutDashboard, label: 'Dashboard', path: '/distributor' },
+                    { icon: Truck, label: 'Shipments', path: '/distributor/shipments' },
                     { icon: Package, label: 'Inventory', path: '/distributor/inventory' },
                     { icon: Truck, label: 'Incoming', path: '/distributor/incoming' },
                     { icon: BarChart3, label: 'Quality', path: '/distributor/quality' },
