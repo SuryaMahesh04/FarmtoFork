@@ -10,4 +10,14 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
         },
     },
+    // Proxy for local development to match production relative paths
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:5000',
+                changeOrigin: true,
+                secure: false,
+            },
+        },
+    },
 })

@@ -66,7 +66,7 @@ const Analytics = () => {
 
     return (
         <DashboardLayout role="farmer">
-            <div className="space-y-6 animate-in">
+            <div className="space-y-6 animate-in pb-20 md:pb-0">
                 <div>
                     <h1 className="text-2xl font-display font-bold text-slate-800">Advanced Analytics</h1>
                     <p className="text-slate-500">Data-driven insights for precision agriculture</p>

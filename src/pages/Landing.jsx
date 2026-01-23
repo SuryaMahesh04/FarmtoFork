@@ -1,17 +1,29 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Sprout, Truck, Store, User, Database, Search, Shield, Leaf, BarChart3, Globe, Award, ArrowRight, CheckCircle2, Menu, X, Zap, Lock, Clock, TrendingUp, Users, Package, Star, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/ui/Button';
 import heroImage from '../assets/image.png';
 import logo from '../assets/logo2.png';
 import useMediaQuery from '../utils/useMediaQuery';
+import { authHelpers } from '../utils/api';
 
 const Landing = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const isMobile = useMediaQuery('(max-width: 768px)');
     const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
     const [faqSearch, setFaqSearch] = useState('');
+    const navigate = useNavigate();
+
+    // Check for existing session
+    React.useEffect(() => {
+        if (authHelpers.isAuthenticated()) {
+            const user = authHelpers.getUser();
+            if (user && user.role) {
+                navigate(`/${user.role}`);
+            }
+        }
+    }, [navigate]);
 
     // Cursor tracking
     React.useEffect(() => {

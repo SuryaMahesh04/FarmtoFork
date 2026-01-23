@@ -125,7 +125,7 @@ const GenerateQR = () => {
 
     return (
         <DashboardLayout role="farmer">
-            <div className="max-w-4xl mx-auto space-y-6 animate-in">
+            <div className="max-w-4xl mx-auto space-y-6 animate-in pb-20 md:pb-0">
                 <div>
                     <h1 className="text-2xl font-display font-bold text-slate-800">Generate QR Code</h1>
                     <p className="text-slate-500">Create unique traceability codes for your batches</p>

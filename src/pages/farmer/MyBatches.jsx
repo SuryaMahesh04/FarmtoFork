@@ -61,23 +61,23 @@ const MyBatches = () => {
 
     return (
         <DashboardLayout role="farmer">
-            <div className="space-y-6 animate-in">
+            <div className="space-y-6 animate-in pb-20 md:pb-0">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-display font-bold text-slate-800">My Batches</h1>
                         <p className="text-slate-500">Manage and track your crop batches</p>
                     </div>
-                    <Button icon={Plus} onClick={() => navigate('/farmer/create-batch')}>Create New Batch</Button>
+                    <Button icon={Plus} onClick={() => navigate('/farmer/create-batch')} className="w-full md:w-auto justify-center">Create New Batch</Button>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-sage-100 p-4">
-                    <div className="flex flex-col md:flex-row gap-4 mb-6">
-                        <div className="relative flex-1">
+                    <div className="flex flex-col gap-4 mb-6">
+                        <div className="relative w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                             <input
                                 type="text"
                                 placeholder="Search batches..."
-                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sage-400 focus:border-transparent"
+                                className="w-full pl-10 pr-4 py-3 md:py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sage-400 focus:border-transparent"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -111,7 +111,7 @@ const MyBatches = () => {
                         <DataTable
                             columns={columns}
                             data={filteredBatches}
-                            onRowClick={(row) => navigate(`/farmer/batch/${row._id}`)}
+                            onRowClick={(row) => navigate(`/farmer/batches/${row._id}`)}
                         />
                     )}
 

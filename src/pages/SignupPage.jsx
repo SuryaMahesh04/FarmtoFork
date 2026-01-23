@@ -1,10 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sprout, Truck, Store, Database, Search, ArrowRight } from 'lucide-react';
 import logo from '../assets/logo2.png';
+import { authHelpers } from '../utils/api';
 
 const SignupPage = () => {
+    const navigate = useNavigate();
+
+    // Check for existing session
+    React.useEffect(() => {
+        if (authHelpers.isAuthenticated()) {
+            const user = authHelpers.getUser();
+            if (user && user.role) {
+                navigate(`/${user.role}`);
+            }
+        }
+    }, [navigate]);
+
     const roles = [
         {
             id: 'farmer',

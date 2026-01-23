@@ -14,6 +14,16 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Check for existing session
+    React.useEffect(() => {
+        if (authHelpers.isAuthenticated()) {
+            const user = authHelpers.getUser();
+            if (user && user.role) {
+                navigate(`/${user.role}`);
+            }
+        }
+    }, [navigate]);
+
     const onSubmit = async (data) => {
         setLoading(true);
         setError('');

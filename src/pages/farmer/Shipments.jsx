@@ -41,13 +41,13 @@ const Shipments = () => {
 
     return (
         <DashboardLayout role="farmer">
-            <div className="space-y-6 animate-in">
-                <div className="flex justify-between items-center">
+            <div className="space-y-6 animate-in pb-20 md:pb-0">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-display font-bold text-slate-800">My Shipments</h1>
                         <p className="text-slate-500">Track and manage your outgoing shipments</p>
                     </div>
-                    <Button icon={Plus} onClick={() => navigate('/farmer/create-shipment')}>Create Shipment</Button>
+                    <Button icon={Plus} onClick={() => navigate('/farmer/create-shipment')} className="w-full md:w-auto justify-center">Create Shipment</Button>
                 </div>
 
                 {shipments.length === 0 ? (
@@ -109,7 +109,10 @@ const Shipments = () => {
                                             ? shipment.trackingUpdates[shipment.trackingUpdates.length - 1].location
                                             : 'Origin'}
                                     </div>
-                                    <button className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
+                                    <button
+                                        onClick={() => navigate(`/farmer/shipment/${shipment._id}`)}
+                                        className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                                    >
                                         View Details
                                     </button>
                                 </div>

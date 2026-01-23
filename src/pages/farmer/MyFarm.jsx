@@ -9,6 +9,7 @@ const MyFarm = () => {
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [weather, setWeather] = useState(null);
 
     useEffect(() => {
         const fetchFarmDetails = async () => {
@@ -16,6 +17,11 @@ const MyFarm = () => {
                 const res = await api.auth.getMe();
                 if (res.success) {
                     setProfile(res.data.profile);
+
+                    // Fetch weather if coordinates exist
+                    if (res.data.profile?.address?.coordinates?.lat) {
+                        fetchWeather(res.data.profile.address.coordinates.lat, res.data.profile.address.coordinates.lng);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch farm details', error);
@@ -25,6 +31,26 @@ const MyFarm = () => {
         };
         fetchFarmDetails();
     }, []);
+
+    const fetchWeather = async (lat, lng) => {
+        try {
+            // Using a default key for demo if variable is missing (NOT RECOMMENDED FOR PRODUCTION, BUT HELPS LOCAL DEV)
+            const API_KEY = import.meta.env.VITE_WEATHER_API_KEY || '64a9388835f14feaa16164601242301';
+            const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${lat},${lng}`);
+
+            if (!res.ok) {
+                console.error('Weather API Error:', res.statusText);
+                setWeather({ error: true });
+                return;
+            }
+
+            const data = await res.json();
+            setWeather(data);
+        } catch (error) {
+            console.error('Failed to fetch weather', error);
+            setWeather({ error: true });
+        }
+    };
 
     // Generate Google Maps URL for "View on Map"
     const getMapUrl = () => {
@@ -52,8 +78,8 @@ const MyFarm = () => {
 
     return (
         <DashboardLayout role="farmer">
-            <div className="space-y-6 animate-in">
-                <div className="flex justify-between items-center">
+            <div className="space-y-6 animate-in pb-20 md:pb-0">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-display font-bold text-slate-800">My Farm</h1>
                         <p className="text-slate-500">Overview of your farm location and details</p>
@@ -62,6 +88,7 @@ const MyFarm = () => {
                         variant="outline"
                         icon={Edit}
                         onClick={() => navigate('/farmer/settings')}
+                        className="w-full md:w-auto justify-center"
                     >
                         Edit Details
                     </Button>
@@ -142,8 +169,8 @@ const MyFarm = () => {
                                 <div className="flex justify-between items-center py-2">
                                     <span className="text-slate-500">Organic Certified</span>
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${profile?.organicCertified
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-slate-100 text-slate-500'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-slate-100 text-slate-500'
                                         }`}>
                                         {profile?.organicCertified ? 'Yes' : 'No'}
                                     </span>
@@ -151,23 +178,35 @@ const MyFarm = () => {
                             </div>
                         </div>
 
-                        {/* Environmental placeholder (Future features) */}
+                        {/* Environmental - Real Data */}
                         <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-md text-white">
                             <h3 className="font-semibold mb-4 flex items-center gap-2">
                                 <Wind className="text-blue-100" /> Current Weather
                             </h3>
-                            <div className="flex items-end gap-4">
-                                <div className="text-4xl font-bold">28°C</div>
-                                <div className="text-blue-100 mb-1">Sunny</div>
-                            </div>
-                            <div className="mt-4 pt-4 border-t border-blue-400/30 flex justify-between text-sm text-blue-50">
-                                <div className="flex items-center gap-1">
-                                    <Droplets size={14} /> Humidity: 65%
+                            {weather && weather.current ? (
+                                <>
+                                    <div className="flex items-end gap-4">
+                                        <div className="text-4xl font-bold">{Math.round(weather.current.temp_c)}°C</div>
+                                        <div className="text-blue-100 mb-1 capitalize">{weather.current.condition?.text}</div>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-blue-400/30 flex justify-between text-sm text-blue-50">
+                                        <div className="flex items-center gap-1">
+                                            <Droplets size={14} /> Humidity: {weather.current.humidity}%
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Wind size={14} /> Wind: {Math.round(weather.current.wind_kph)}km/h
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-blue-100 text-sm py-4 text-center">
+                                    {weather?.error ? (
+                                        <span className="text-yellow-200">Weather unavailable (Check API Key)</span>
+                                    ) : (
+                                        profile?.address?.coordinates?.lat ? 'Loading weather...' : 'Location not set'
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <Wind size={14} /> Wind: 12km/h
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
