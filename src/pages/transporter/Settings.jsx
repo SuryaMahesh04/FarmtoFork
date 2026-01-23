@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { User, Bell, Shield, Save, Truck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { User, Bell, Shield, Save, Truck, LogOut } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 
@@ -7,6 +8,7 @@ import { api, authHelpers } from '../../utils/api';
 import PlacesAutocomplete from '../../components/ui/PlacesAutocomplete';
 
 const Settings = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -20,6 +22,11 @@ const Settings = () => {
         notifications: true,
         emailAlerts: false,
     });
+
+    const handleSignOut = () => {
+        authHelpers.logout();
+        navigate('/');
+    };
 
     useEffect(() => {
         fetchProfile();
@@ -112,6 +119,16 @@ const Settings = () => {
                                 {tab.label}
                             </button>
                         ))}
+
+                        <hr className="my-4 border-slate-200" />
+
+                        <button
+                            onClick={handleSignOut}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                            <LogOut size={18} />
+                            Sign Out
+                        </button>
                     </div>
 
                     {/* Content Area */}

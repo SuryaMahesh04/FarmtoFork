@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, Bell, Shield, Globe, Save, Loader2, AlertCircle, Sprout, FileText, MapPin } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Bell, Shield, Globe, Save, Loader2, AlertCircle, Sprout, FileText, MapPin, LogOut } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
@@ -9,10 +10,16 @@ import { indiaStates, cropTypes, landTypes } from '../../data/indiaGeoData';
 import PlacesAutocomplete from '../../components/ui/PlacesAutocomplete';
 
 const Settings = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+
+    const handleSignOut = () => {
+        authHelpers.logout();
+        navigate('/');
+    };
 
     const [formData, setFormData] = useState({
         // Personal
@@ -199,6 +206,16 @@ const Settings = () => {
                                 {tab.label}
                             </button>
                         ))}
+
+                        <hr className="my-4 border-slate-200" />
+
+                        <button
+                            onClick={handleSignOut}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                            <LogOut size={18} />
+                            Sign Out
+                        </button>
                     </div>
 
                     {/* Content Area */}

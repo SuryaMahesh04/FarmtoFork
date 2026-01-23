@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
     Home, Package, BarChart3, QrCode, Settings,
-    Truck, Warehouse, Store, Shield, Search
+    Truck, Warehouse, Store, Shield, Search, MapPin
 } from 'lucide-react';
 
 const MobileNav = ({ role }) => {
@@ -12,7 +12,9 @@ const MobileNav = ({ role }) => {
             case 'farmer':
                 return [
                     { path: '/farmer', icon: Home, label: 'Home' },
+                    { path: '/farmer/my-farm', icon: MapPin, label: 'Farm' },
                     { path: '/farmer/batches', icon: Package, label: 'Batches' },
+                    { path: '/farmer/shipments', icon: Truck, label: 'Shipments' },
                     { path: '/farmer/scan', icon: QrCode, label: 'QR' },
                     { path: '/farmer/analytics', icon: BarChart3, label: 'Analytics' },
                     { path: '/farmer/settings', icon: Settings, label: 'Settings' }
@@ -55,14 +57,15 @@ const MobileNav = ({ role }) => {
     const navItems = getNavItems();
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-2 pb-safe">
-            <div className="flex items-center justify-around">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-2 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div className="flex items-center overflow-x-auto hide-scrollbar gap-1 py-1">
                 {navItems.map((item) => (
                     <NavLink
                         key={item.path}
                         to={item.path}
+                        end={item.path === `/${role}`}
                         className={({ isActive }) => `
-                            flex flex-col items-center justify-center py-2 px-3 min-w-[60px] transition-all duration-200
+                            flex flex-1 w-full flex-col items-center justify-center py-2 px-2 min-w-[64px] flex-shrink-0 transition-all duration-200
                             ${isActive
                                 ? 'text-emerald-600'
                                 : 'text-slate-400 hover:text-slate-600'
@@ -72,7 +75,7 @@ const MobileNav = ({ role }) => {
                         {({ isActive }) => (
                             <>
                                 <div className={`
-                                    relative p-2 rounded-xl transition-all duration-200
+                                    relative p-1.5 rounded-xl transition-all duration-200
                                     ${isActive ? 'bg-emerald-50' : ''}
                                 `}>
                                     <item.icon
@@ -94,6 +97,15 @@ const MobileNav = ({ role }) => {
                     </NavLink>
                 ))}
             </div>
+            <style>{`
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
         </nav>
     );
 };

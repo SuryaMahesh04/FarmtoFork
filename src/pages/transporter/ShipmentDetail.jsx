@@ -421,17 +421,56 @@ const ShipmentDetail = ({ role: propsRole }) => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-slate-500 mb-1">Origin</p>
-                                    <p className="font-semibold text-slate-800">{shipment.origin?.city || shipment.farmer?.profile?.city || 'Unknown'}</p>
-                                    <p className="text-sm text-slate-500">{shipment.origin?.state || shipment.farmer?.profile?.state || ''}</p>
+                                    <p className="font-semibold text-slate-800">
+                                        {shipment.origin?.city ||
+                                            shipment.farmer?.profile?.address?.city ||
+                                            shipment.farmer?.profile?.village ||
+                                            shipment.farmer?.profile?.district ||
+                                            'Unknown Origin'}
+                                    </p>
+                                    <p className="text-sm text-slate-500">
+                                        {shipment.origin?.state ||
+                                            shipment.farmer?.profile?.address?.state ||
+                                            shipment.farmer?.profile?.state || ''}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500 mb-1">Destination</p>
-                                    <p className="font-semibold text-slate-800">{shipment.destination?.city || shipment.distributor?.profile?.city || 'Unknown'}</p>
-                                    <p className="text-sm text-slate-500">{shipment.destination?.state || shipment.distributor?.profile?.state || ''}</p>
+                                    <p className="font-semibold text-slate-800">
+                                        {shipment.destination?.city ||
+                                            shipment.distributor?.profile?.address?.city ||
+                                            shipment.distributor?.profile?.city ||
+                                            shipment.distributor?.profile?.district ||
+                                            'Unknown Dest'}
+                                    </p>
+                                    <p className="text-sm text-slate-500">
+                                        {shipment.destination?.state ||
+                                            shipment.distributor?.profile?.address?.state ||
+                                            shipment.distributor?.profile?.state || ''}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500 mb-1">Total Distance</p>
-                                    <p className="font-semibold text-slate-800">{shipment.distance || 'N/A'}</p>
+                                    <p className="font-semibold text-slate-800">
+                                        {shipment.distance || (() => {
+                                            const lat1 = shipment.farmer?.profile?.address?.coordinates?.lat;
+                                            const lon1 = shipment.farmer?.profile?.address?.coordinates?.lng;
+                                            const lat2 = shipment.distributor?.profile?.address?.coordinates?.lat;
+                                            const lon2 = shipment.distributor?.profile?.address?.coordinates?.lng;
+
+                                            if (lat1 && lon1 && lat2 && lon2) {
+                                                const R = 6371; // km
+                                                const dLat = (lat2 - lat1) * Math.PI / 180;
+                                                const dLon = (lon2 - lon1) * Math.PI / 180;
+                                                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                                                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                                                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                                                return `${Math.round(R * c)} km (Est.)`;
+                                            }
+                                            return 'Calculating...';
+                                        })()}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500 mb-1">Date Created</p>

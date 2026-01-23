@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import MetricCard from '../../components/ui/MetricCard';
+import Button from '../../components/ui/Button';
 import MobileMetricCard from '../../components/ui/MobileMetricCard';
 import DataTable from '../../components/ui/DataTable';
 import ChartCard from '../../components/ui/ChartCard';

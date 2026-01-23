@@ -1,6 +1,7 @@
 import React from 'react';
-import { Sprout, Bell, User as UserIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Bell, User as UserIcon } from 'lucide-react';
+import logo from '../../assets/logo2.png';
 
 const MobileHeader = ({ role }) => {
     const navigate = useNavigate();
@@ -22,14 +23,16 @@ const MobileHeader = ({ role }) => {
             <div className="flex items-center justify-between">
                 {/* Logo and Role */}
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-200">
-                        <Sprout size={16} />
-                    </div>
+                    <img
+                        src={logo}
+                        alt="Farm2Fork Logo"
+                        className="h-8 w-auto object-contain"
+                    />
                     <div className="flex flex-col">
-                        <span className="font-display font-bold text-sm text-slate-900">
-                            Agri<span className="text-emerald-700">Chain</span>
+                        <span className="font-display font-bold text-lg text-slate-800 leading-tight">
+                            Farm<span className="text-emerald-600">2</span>Fork
                         </span>
-                        <span className="text-xs text-slate-500">{getRoleName(role)}</span>
+                        <span className="text-[10px] text-slate-500 font-medium leading-none">{getRoleName(role)}</span>
                     </div>
                 </div>
 

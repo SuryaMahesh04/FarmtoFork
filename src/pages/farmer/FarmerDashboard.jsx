@@ -272,7 +272,7 @@ const FarmerDashboard = () => {
                             <DataTable
                                 columns={columns}
                                 data={batches}
-                                onRowClick={(row) => navigate(`/farmer/batch/${row._id}`)}
+                                onRowClick={(row) => navigate(`/farmer/batches/${row._id}`)}
                             />
                         ) : (
                             <div className="text-center py-12 bg-white rounded-xl border border-slate-200">

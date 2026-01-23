@@ -82,10 +82,10 @@ exports.getShipments = async (req, res) => {
         }
 
         const shipments = await Shipment.find(query)
-            .populate('farmer', 'profile.fullName profile.address')
+            .populate('farmer', 'profile.fullName profile.address profile.village profile.district profile.city profile.state')
             .populate('batch', 'batchId crop variety quantity')
-            .populate('distributor', 'profile.companyName profile.fullName profile.address')
-            .populate('transporter', 'profile.companyName profile.fullName profile.address')
+            .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state')
+            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state')
             .sort({ createdAt: -1 });
 
         res.json({
@@ -104,10 +104,10 @@ exports.getShipments = async (req, res) => {
 exports.getShipmentById = async (req, res) => {
     try {
         const shipment = await Shipment.findById(req.params.id)
-            .populate('farmer', 'profile.fullName profile.mobile profile.address')
+            .populate('farmer', 'profile.fullName profile.mobile profile.address profile.village profile.district profile.city profile.state')
             .populate('batch')
-            .populate('distributor', 'profile.companyName profile.fullName profile.address')
-            .populate('transporter', 'profile.companyName profile.fullName profile.address');
+            .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state profile.district')
+            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state');
 
         if (!shipment) {
             return res.status(404).json({ success: false, message: 'Shipment not found' });
@@ -130,10 +130,10 @@ exports.updateShipmentStatus = async (req, res) => {
         const userId = req.user.id;
 
         const shipment = await Shipment.findById(id)
-            .populate('farmer', 'profile.fullName profile.mobile profile.address')
+            .populate('farmer', 'profile.fullName profile.mobile profile.address profile.village profile.district profile.city profile.state')
             .populate('batch')
-            .populate('distributor', 'profile.companyName profile.fullName profile.address')
-            .populate('transporter', 'profile.companyName profile.fullName profile.address');
+            .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state profile.district')
+            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state');
 
         if (!shipment) {
             return res.status(404).json({ success: false, message: 'Shipment not found' });
@@ -248,10 +248,10 @@ exports.updateShipmentStatus = async (req, res) => {
 
         // Re-fetch with full population to ensure frontend gets complete data (Safeguard against Mongoose depopulation on save)
         const updatedShipment = await Shipment.findById(id)
-            .populate('farmer', 'profile.fullName profile.mobile profile.address')
+            .populate('farmer', 'profile.fullName profile.mobile profile.address profile.village profile.district profile.city profile.state')
             .populate('batch')
-            .populate('distributor', 'profile.companyName profile.fullName profile.address')
-            .populate('transporter', 'profile.companyName profile.fullName profile.address');
+            .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state profile.district')
+            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state');
 
         // Notify Farmer
         await Notification.create({

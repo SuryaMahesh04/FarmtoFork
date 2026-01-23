@@ -23,6 +23,7 @@ import TransporterDashboard from './pages/transporter/TransporterDashboard';
 import TransporterShipments from './pages/transporter/Shipments';
 import TransporterRoutes from './pages/transporter/Routes';
 import TransporterSettings from './pages/transporter/Settings';
+import TransporterAnalytics from './pages/transporter/Analytics';
 import ShipmentDetail from './pages/transporter/ShipmentDetail';
 import DistributorDashboard from './pages/distributor/DistributorDashboard';
 import DistributorShipments from './pages/distributor/Shipments';
@@ -76,6 +77,7 @@ function App() {
                     <Route path="/transporter/shipments" element={<TransporterShipments />} />
                     <Route path="/transporter/routes" element={<TransporterRoutes />} />
                     <Route path="/transporter/settings" element={<TransporterSettings />} />
+                    <Route path="/transporter/analytics" element={<TransporterAnalytics />} />
                     <Route path="/transporter/shipment/:shipmentId" element={<ShipmentDetail role="transporter" />} />
 
                     <Route path="/distributor" element={<DistributorDashboard />} />
