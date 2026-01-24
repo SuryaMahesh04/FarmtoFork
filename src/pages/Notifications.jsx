@@ -4,6 +4,7 @@ import { Bell, Package, Check, ArrowLeft, Trash2 } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Button from '../components/ui/Button';
 import { api, authHelpers } from '../utils/api';
+import Loader from '../components/ui/Loader';
 
 const Notifications = () => {
     const navigate = useNavigate();
@@ -20,7 +21,12 @@ const Notifications = () => {
     const fetchNotifications = async () => {
         try {
             setLoading(true);
-            const response = await api.notification.getAll();
+            const minLoadTime = 3400;
+            const [response] = await Promise.all([
+                api.notification.getAll(),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
+            ]);
+
             if (response.success) {
                 setNotifications(response.data);
             }
@@ -66,9 +72,7 @@ const Notifications = () => {
     if (loading) {
         return (
             <DashboardLayout role={role}>
-                <div className="flex justify-center items-center h-96">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-                </div>
+                <Loader text="Loading notifications..." />
             </DashboardLayout>
         );
     }
@@ -118,8 +122,8 @@ const Notifications = () => {
                                 >
                                     {/* Icon */}
                                     <div className={`mt-1 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notif.type === 'shipment_request' ? 'bg-blue-100 text-blue-600' :
-                                            notif.type === 'shipment_accepted' ? 'bg-emerald-100 text-emerald-600' :
-                                                'bg-slate-100 text-slate-500'
+                                        notif.type === 'shipment_accepted' ? 'bg-emerald-100 text-emerald-600' :
+                                            'bg-slate-100 text-slate-500'
                                         }`}>
                                         <Package size={20} />
                                     </div>

@@ -5,6 +5,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { api } from '../../utils/api';
+import Loader from '../../components/ui/Loader';
 
 const Shipments = () => {
     const navigate = useNavigate();
@@ -18,7 +19,12 @@ const Shipments = () => {
     const fetchShipments = async () => {
         try {
             setLoading(true);
-            const response = await api.shipment.getAll();
+            const minLoadTime = 3400;
+            const [response] = await Promise.all([
+                api.shipment.getAll(),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
+            ]);
+
             if (response.success) {
                 setShipments(response.data);
             }
@@ -32,9 +38,7 @@ const Shipments = () => {
     if (loading) {
         return (
             <DashboardLayout role="farmer">
-                <div className="flex justify-center items-center h-96">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-                </div>
+                <Loader text="Loading shipments..." />
             </DashboardLayout>
         );
     }

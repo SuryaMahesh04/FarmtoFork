@@ -3,6 +3,7 @@ import QRCode from 'react-qr-code';
 import { QrCode, Download, Printer, Share2, AlertCircle, Loader2 } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
+import Loader from '../../components/ui/Loader';
 import { api } from '../../utils/api';
 
 const GenerateQR = () => {
@@ -19,7 +20,12 @@ const GenerateQR = () => {
     const fetchBatches = async () => {
         try {
             setLoading(true);
-            const res = await api.farmer.getBatches();
+            const minLoadTime = 3400;
+            const [res] = await Promise.all([
+                api.farmer.getBatches(),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
+            ]);
+
             if (res.success) {
                 setBatches(res.data);
             } else {
@@ -133,7 +139,7 @@ const GenerateQR = () => {
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
-                        <Loader2 className="animate-spin text-sage-500" size={32} />
+                        <Loader text="Loading batches..." />
                     </div>
                 ) : error ? (
                     <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-2">

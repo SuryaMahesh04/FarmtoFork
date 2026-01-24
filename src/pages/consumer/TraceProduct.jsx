@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Loader2, Package, MapPin, Calendar, User, ShieldCheck } from 'lucide-react';
+import { Package, MapPin, Calendar, User, ShieldCheck } from 'lucide-react';
 import Header from '../../components/layout/Header';
+import Loader from '../../components/ui/Loader';
 import Footer from '../../components/layout/Footer';
 
 const TraceProduct = () => {
@@ -9,8 +10,8 @@ const TraceProduct = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simulate loading
-        setTimeout(() => setLoading(false), 1500);
+        // Simulate loading with minimum duration for animation
+        setTimeout(() => setLoading(false), 3400);
     }, []);
 
     return (
@@ -20,9 +21,8 @@ const TraceProduct = () => {
             <main className="flex-grow container mx-auto px-4 py-8">
                 <div className="max-w-3xl mx-auto">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center h-64">
-                            <Loader2 className="animate-spin text-sage-500 mb-4" size={48} />
-                            <p className="text-slate-500">Fetching blockchain records...</p>
+                        <div className="flex flex-col items-center justify-center h-96">
+                            <Loader text="Fetching blockchain records..." />
                         </div>
                     ) : (
                         <div className="space-y-6 animate-in fade-in">

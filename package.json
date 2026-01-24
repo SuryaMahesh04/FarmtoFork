@@ -25,6 +25,7 @@
         "gsap": "^3.12.5",
         "html5-qrcode": "^2.3.8",
         "jsonwebtoken": "^9.0.2",
+        "lottie-react": "^2.4.1",
         "lucide-react": "^0.344.0",
         "mongoose": "^8.0.0",
         "react": "^18.2.0",

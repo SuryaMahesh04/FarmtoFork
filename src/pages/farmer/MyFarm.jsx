@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Sprout, Wind, Droplets, ExternalLink, Edit } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
+import Loader from '../../components/ui/Loader';
 import { api } from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,7 +15,12 @@ const MyFarm = () => {
     useEffect(() => {
         const fetchFarmDetails = async () => {
             try {
-                const res = await api.auth.getMe();
+                const minLoadTime = 3400;
+                const [res] = await Promise.all([
+                    api.auth.getMe(),
+                    new Promise(resolve => setTimeout(resolve, minLoadTime))
+                ]);
+
                 if (res.success) {
                     setProfile(res.data.profile);
 
@@ -69,9 +75,7 @@ const MyFarm = () => {
     if (loading) {
         return (
             <DashboardLayout role="farmer">
-                <div className="flex h-96 items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage-500"></div>
-                </div>
+                <Loader text="Loading farm details..." />
             </DashboardLayout>
         );
     }
