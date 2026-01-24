@@ -11,6 +11,7 @@ import MetricCard from '../../components/ui/MetricCard';
 import ChartCard from '../../components/ui/ChartCard';
 import { chartTheme } from '../../utils/chartConfig';
 import { api } from '../../utils/api';
+import Loader from '../../components/ui/Loader';
 
 const Analytics = () => {
     const [analytics, setAnalytics] = useState(null);
@@ -24,7 +25,12 @@ const Analytics = () => {
     const fetchAnalytics = async () => {
         try {
             setLoading(true);
-            const res = await api.farmer.getAnalytics();
+            const minLoadTime = 3400;
+            const [res] = await Promise.all([
+                api.farmer.getAnalytics(),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
+            ]);
+
             if (res.success) {
                 setAnalytics(res.data);
             } else {
@@ -41,9 +47,7 @@ const Analytics = () => {
     if (loading) {
         return (
             <DashboardLayout role="farmer">
-                <div className="flex justify-center items-center h-96">
-                    <Loader2 className="animate-spin text-sage-500" size={48} />
-                </div>
+                <Loader text="Loading analytics..." />
             </DashboardLayout>
         );
     }

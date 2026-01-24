@@ -5,6 +5,7 @@ import { ArrowLeft, Truck, MapPin, Package, User, Clock, CheckCircle, XCircle, N
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 import StatusBadge from '../../components/ui/StatusBadge';
+import Loader from '../../components/ui/Loader';
 import useMediaQuery from '../../utils/useMediaQuery';
 
 // Mock shipment data
@@ -36,7 +37,12 @@ const ShipmentDetail = ({ role: propsRole }) => {
     const fetchShipmentDetails = async () => {
         try {
             setLoading(true);
-            const response = await api.request(`/shipments/${shipmentId}`);
+            const minLoadTime = 3400;
+            const [response] = await Promise.all([
+                api.request(`/shipments/${shipmentId}`),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
+            ]);
+
             if (response.success) {
                 setShipment(response.data);
             }
@@ -67,9 +73,7 @@ const ShipmentDetail = ({ role: propsRole }) => {
     if (loading) {
         return (
             <DashboardLayout role={locationRole}>
-                <div className="flex justify-center items-center h-96">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-                </div>
+                <Loader text="Loading shipment details..." />
             </DashboardLayout>
         );
     }

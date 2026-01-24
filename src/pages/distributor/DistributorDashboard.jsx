@@ -16,6 +16,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import { chartTheme } from '../../utils/chartConfig';
 import useMediaQuery from '../../utils/useMediaQuery';
+import Loader from '../../components/ui/Loader';
 
 // Dummy data replaced by real API data
 
@@ -37,11 +38,13 @@ const DistributorDashboard = () => {
                 const currentUser = authHelpers.getUser();
                 setUser(currentUser);
 
+                const minLoadTime = 3400;
                 const [statsRes, inventoryRes, analyticsRes, userRes] = await Promise.all([
                     api.distributor.getStats(),
                     api.distributor.getInventory(),
                     api.distributor.getAnalytics(),
-                    api.auth.getMe()
+                    api.auth.getMe(),
+                    new Promise(resolve => setTimeout(resolve, minLoadTime))
                 ]);
 
                 if (statsRes.success) setStats(statsRes.data);
@@ -80,12 +83,7 @@ const DistributorDashboard = () => {
     if (loading) {
         return (
             <DashboardLayout role="distributor">
-                <div className="flex items-center justify-center h-96">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                        <p className="text-slate-600">Loading dashboard...</p>
-                    </div>
-                </div>
+                <Loader text="Loading dashboard..." />
             </DashboardLayout>
         );
     }
