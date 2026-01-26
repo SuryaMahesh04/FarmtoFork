@@ -1,208 +1,208 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, MapPin, Package, Clock, Filter, Search } from 'lucide-react';
+import { Search, Filter, Plus } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/ui/DataTable';
-import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import useMediaQuery from '../../utils/useMediaQuery';
+import ShipmentFilterModal from '../../components/transporter/ShipmentFilterModal';
+import AddShipmentModal from '../../components/transporter/AddShipmentModal';
 
-import { api } from '../../utils/api';
-// Mock data removed
+import { shipmentStore } from '../../utils/shipmentStore';
 
 const Shipments = () => {
     const navigate = useNavigate();
     const isMobile = useMediaQuery('(max-width: 768px)');
-    const [filterStatus, setFilterStatus] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('All Shipments');
     const [searchQuery, setSearchQuery] = useState('');
-    const [allShipments, setAllShipments] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchShipments = async () => {
-            try {
-                const response = await api.shipment.getAll();
-                if (response.success) {
-                    // Map backend data to table format
-                    const mappedData = response.data.map(s => ({
-                        id: s.shipmentId,
-                        _id: s._id,
-                        origin: s.farmer?.profile?.address?.city || s.farmer?.profile?.address?.formattedAddress || 'Origin Pending',
-                        destination: s.distributor?.profile?.address?.city || s.distributor?.profile?.address?.formattedAddress || 'Destination Pending',
-                        cargo: `${s.batch?.crop || 'Crop'} - ${s.batch?.quantity || 0}T`,
-                        vehicle: 'Not Assigned',
-                        eta: 'TBD',
-                        status: s.status,
-                        transporterStatus: s.transporterStatus
-                    }));
-                    setAllShipments(mappedData);
-                }
-            } catch (error) {
-                console.error('Failed to fetch shipments', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchShipments();
-    }, []);
-
-    const columns = [
-        { header: 'Shipment ID', accessor: 'id' },
-        { header: 'Origin', accessor: 'origin' },
-        { header: 'Destination', accessor: 'destination' },
-        { header: 'Cargo', accessor: 'cargo' },
-        { header: 'Vehicle', accessor: 'vehicle' },
-        { header: 'ETA', accessor: 'eta' },
-        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
-        {
-            header: 'Actions',
-            accessor: 'actions',
-            render: (row) => {
-                // Show actions if shipment is globally pending and WE haven't accepted yet
-                if (row.status === 'pending' && row.transporterStatus !== 'accepted') {
-                    return (
-                        <div className="flex gap-2">
-                            <Button
-                                size="sm"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(row._id, 'accepted');
-                                }}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-xs px-2 py-1 h-8"
-                            >
-                                Accept
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(row._id, 'rejected');
-                                }}
-                                className="text-red-600 border-red-200 hover:bg-red-50 text-xs px-2 py-1 h-8"
-                            >
-                                Decline
-                            </Button>
-                        </div>
-                    );
-                }
-                return null;
-            }
-        }
-    ];
-
-    const handleStatusUpdate = async (id, status) => {
-        try {
-            const response = await api.shipment.updateStatus(id, status);
-            if (response.success) {
-                // Refresh list
-                const updatedList = allShipments.map(s => {
-                    if (s._id === id) {
-                        return { ...s, status: status === 'accepted' ? s.status : 'rejected', transporterStatus: status };
-                    }
-                    return s;
-                });
-                setAllShipments(updatedList);
-                // Re-fetch to be safe and get full fresh data
-                // fetchShipments(); // Optional
-            }
-        } catch (error) {
-            console.error('Action failed', error);
-        }
-    };
-
-    // Filter shipments
-    const filteredShipments = allShipments.filter(shipment => {
-        const matchesStatus = filterStatus === 'all' || shipment.status === filterStatus;
-        const matchesSearch = shipment.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            shipment.origin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            shipment.destination.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesStatus && matchesSearch;
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    
+    // Initial State Matching Filter Modal
+    const [activeFilters, setActiveFilters] = useState({
+        types: [],
+        status: [],
+        origin: '',
+        destination: '',
+        dateStart: '',
+        dateEnd: ''
     });
 
-    const statusCounts = {
-        all: allShipments.length,
-        in_transit: allShipments.filter(s => s.status === 'in_transit').length,
-        scheduled: allShipments.filter(s => s.status === 'scheduled').length,
-        delivered: allShipments.filter(s => s.status === 'delivered').length
+    const [shipments, setShipments] = useState(shipmentStore.getAll()); 
+
+    const handleAddShipment = (newShipment) => {
+        const updatedShipments = shipmentStore.add(newShipment);
+        setShipments(updatedShipments);
     };
+
+    const columns = [
+        { 
+            header: 'Shipment ID', 
+            accessor: 'id',
+            render: (row) => <span className="font-medium text-slate-600">{row.id}</span>
+        },
+        { 
+            header: 'Type', 
+            accessor: 'type',
+            render: (row) => (
+                <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
+                    row.type === 'Personal Shipment' 
+                    ? 'bg-indigo-100 text-indigo-700' 
+                    : row.type === 'Farmer Request'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-purple-100 text-purple-700'
+                }`}>
+                    {row.type}
+                </span>
+            )
+        },
+        { header: 'Origin', accessor: 'origin', className: 'max-w-[150px] truncate' },
+        { header: 'Destination', accessor: 'destination', className: 'max-w-[200px] truncate' },
+        { header: 'Cargo', accessor: 'cargo' },
+        { header: 'Capacity', accessor: 'capacity' },
+        { 
+            header: 'Vehicle', 
+            accessor: 'vehicle',
+            render: (row) => (
+                <span className={row.vehicle === 'Pending Assignment' ? 'text-slate-400 italic' : 'font-medium'}>
+                    {row.vehicle}
+                </span>
+            )
+        },
+        { header: 'ETA', accessor: 'eta' },
+    ];
+
+    const filteredShipments = shipments.filter(s => {
+        // Tab Status Filter
+        if (filterStatus === 'In Transit' && s.status !== 'On Route') return false;
+        if (filterStatus === 'Scheduled' && s.status !== 'Pending') return false;
+        if (filterStatus === 'Delivered' && s.status !== 'Delivered') return false;
+        
+        // Search Filter
+        const matchesSearch = s.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              s.origin.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              s.destination.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (!matchesSearch) return false;
+
+        // Modal Advanced Filters
+        if (activeFilters.types.length > 0 && !activeFilters.types.includes(s.type)) return false;
+        if (activeFilters.status.length > 0 && !activeFilters.status.includes(s.status)) return false;
+        if (activeFilters.origin && !s.origin.toLowerCase().includes(activeFilters.origin.toLowerCase())) return false;
+        if (activeFilters.destination && !s.destination.toLowerCase().includes(activeFilters.destination.toLowerCase())) return false;
+
+        return true;
+    });
+
+    const tabs = [
+        { name: 'All Shipments', count: shipments.length },
+        { name: 'In Transit', count: shipments.filter(s => s.status === 'On Route').length },
+        { name: 'Scheduled', count: shipments.filter(s => s.status === 'Pending').length },
+        { name: 'Delivered', count: shipments.filter(s => s.status === 'Delivered').length }
+    ];
+
+    // Calculate Active Filters Count
+    const activeFilterCount = activeFilters.types.length + 
+                              activeFilters.status.length + 
+                              (activeFilters.origin ? 1 : 0) + 
+                              (activeFilters.destination ? 1 : 0);
 
     return (
         <DashboardLayout role="transporter">
             <div className="space-y-6">
                 {/* Header */}
-                <div className="animate-in">
-                    <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">All Shipments</h1>
-                    <p className="text-sm md:text-base text-slate-500">Manage and track all your shipments</p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 className="text-2xl font-display font-bold text-slate-800">All Shipments</h1>
+                        <p className="text-slate-500">Manage and track all your shipments</p>
+                    </div>
+                    <Button 
+                        icon={Plus} 
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30"
+                    >
+                        New Shipment
+                    </Button>
                 </div>
 
-                {/* Status Filter Tabs */}
-                <div className={`${isMobile ? 'flex overflow-x-auto gap-2 pb-2' : 'flex gap-4'} animate-in`} style={{ animationDelay: '0.1s' }}>
-                    {[
-                        { key: 'all', label: 'All Shipments', count: statusCounts.all },
-                        { key: 'in_transit', label: 'In Transit', count: statusCounts.in_transit },
-                        { key: 'scheduled', label: 'Scheduled', count: statusCounts.scheduled },
-                        { key: 'delivered', label: 'Delivered', count: statusCounts.delivered }
-                    ].map(tab => (
+                {/* Tabs */}
+                <div className="flex flex-wrap gap-3">
+                    {tabs.map(tab => (
                         <button
-                            key={tab.key}
-                            onClick={() => setFilterStatus(tab.key)}
-                            className={`${isMobile ? 'px-4 py-2 text-sm whitespace-nowrap' : 'px-6 py-3'
-                                } rounded-lg font-medium transition-all ${filterStatus === tab.key
-                                    ? 'bg-blue-100 text-blue-800 shadow-sm'
-                                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                                }`}
+                            key={tab.name}
+                            onClick={() => setFilterStatus(tab.name)}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                                filterStatus === tab.name
+                                ? 'bg-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200'
+                                : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
+                            }`}
                         >
-                            {tab.label}
-                            <span className={`ml-2 ${isMobile ? 'text-xs' : 'text-sm'} ${filterStatus === tab.key ? 'text-blue-600' : 'text-slate-400'
-                                }`}>
+                            {tab.name}
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold tabular-nums ${
+                                filterStatus === tab.name
+                                ? 'bg-blue-200 text-blue-800'
+                                : 'bg-slate-100 text-slate-500'
+                            }`}>
                                 ({tab.count})
                             </span>
                         </button>
                     ))}
                 </div>
 
-                {/* Search Bar */}
-                <div className="animate-in" style={{ animationDelay: '0.2s' }}>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Search by shipment ID, origin, or destination..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:outline-none bg-white"
+                {/* Search */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                    <input 
+                        type="text"
+                        placeholder="Search by shipment ID, origin, or destination..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                {/* Table Header & Content */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+                        <h2 className="font-display font-bold text-slate-800 text-lg">
+                            {filteredShipments.length} Shipments
+                        </h2>
+                        <button 
+                            onClick={() => setIsFilterModalOpen(true)}
+                            className={`flex items-center gap-2 font-medium text-sm transition-all ${
+                                activeFilterCount > 0 
+                                ? 'text-emerald-700 bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-full shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            <Filter size={16} className={activeFilterCount > 0 ? "fill-emerald-700" : ""} />
+                            Filter
+                        </button>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                        <DataTable 
+                            columns={columns} 
+                            data={filteredShipments}
+                            onRowClick={() => {}}
+                            hideToolbar={true}
                         />
                     </div>
                 </div>
 
-                {/* Shipments Table */}
-                <div className="animate-in" style={{ animationDelay: '0.3s' }}>
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-                            <h2 className="text-base md:text-lg font-display font-semibold text-slate-700">
-                                {filteredShipments.length} Shipment{filteredShipments.length !== 1 ? 's' : ''}
-                            </h2>
-                            {!isMobile && (
-                                <Button icon={Filter} variant="ghost" size="sm">Filter</Button>
-                            )}
-                        </div>
-                        <div className={isMobile ? 'overflow-x-auto' : ''}>
-                            <DataTable
-                                columns={columns}
-                                data={filteredShipments}
-                                onRowClick={(row) => navigate(`/transporter/shipment/${row._id}`)}
-                            />
-                        </div>
-                    </div>
+                <ShipmentFilterModal
+                    isOpen={isFilterModalOpen}
+                    onClose={() => setIsFilterModalOpen(false)}
+                    currentFilters={activeFilters}
+                    onApply={setActiveFilters}
+                    shipments={shipments}
+                />
 
-                    {filteredShipments.length === 0 && (
-                        <div className="text-center py-12">
-                            <Package className="mx-auto text-slate-300 mb-4" size={48} />
-                            <p className="text-slate-500">No shipments found matching your criteria</p>
-                        </div>
-                    )}
-                </div>
+                <AddShipmentModal
+                    isOpen={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                    onAdd={handleAddShipment}
+                />
             </div>
         </DashboardLayout>
     );
