@@ -6,6 +6,7 @@ import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import useMediaQuery from '../../utils/useMediaQuery';
+import Loader from '../../components/ui/Loader';
 
 // Dummy data replaced by real API call
 
@@ -24,7 +25,12 @@ const Inventory = () => {
     const fetchInventory = async () => {
         try {
             setLoading(true);
-            const res = await api.distributor.getInventory();
+            const minLoadTime = 3400;
+            const [res] = await Promise.all([
+                api.distributor.getInventory(),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
+            ]);
+
             if (res.success) {
                 setInventory(res.data);
             } else {
@@ -72,12 +78,7 @@ const Inventory = () => {
     if (loading) {
         return (
             <DashboardLayout role="distributor">
-                <div className="flex items-center justify-center h-96">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                        <p className="text-slate-600">Loading inventory...</p>
-                    </div>
-                </div>
+                <Loader text="Loading inventory..." />
             </DashboardLayout>
         );
     }

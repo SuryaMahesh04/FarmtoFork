@@ -5,6 +5,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import { api } from '../../utils/api';
+import Loader from '../../components/ui/Loader';
 
 const CreateShipment = () => {
     const navigate = useNavigate();
@@ -30,11 +31,13 @@ const CreateShipment = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
+            const minLoadTime = 3400;
             const [batchesRes, distRes, transpRes, shipmentsRes] = await Promise.all([
                 api.farmer.getBatches({ status: 'active' }), // Only active batches
                 api.shipment.getDistributors(),
                 api.shipment.getTransporters(),
-                api.shipment.getAll() // Fetch existing shipments to filter
+                api.shipment.getAll(), // Fetch existing shipments to filter
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
             ]);
 
             if (batchesRes.success) {
@@ -111,9 +114,7 @@ const CreateShipment = () => {
     if (loading) {
         return (
             <DashboardLayout role="farmer">
-                <div className="flex justify-center items-center h-96">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-                </div>
+                <Loader text="Loading form data..." />
             </DashboardLayout>
         );
     }

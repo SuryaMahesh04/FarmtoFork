@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Bell, Shield, Globe, Save, Loader2, AlertCircle, Sprout, FileText, MapPin, LogOut } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
+import Loader from '../../components/ui/Loader';
 import Select from '../../components/ui/Select';
 import { api, authHelpers } from '../../utils/api';
 import { indiaStates, cropTypes, landTypes } from '../../data/indiaGeoData';
@@ -56,7 +57,12 @@ const Settings = () => {
     const fetchProfile = async () => {
         try {
             setLoading(true);
-            const res = await api.auth.getMe();
+            const minLoadTime = 3400;
+            const [res] = await Promise.all([
+                api.auth.getMe(),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
+            ]);
+
             if (res.success) {
                 const user = res.data;
                 const profile = user.profile || {};
@@ -167,9 +173,7 @@ const Settings = () => {
     if (loading) {
         return (
             <DashboardLayout role="farmer">
-                <div className="flex justify-center items-center h-96">
-                    <Loader2 className="animate-spin text-sage-500" size={48} />
-                </div>
+                <Loader text="Loading settings..." />
             </DashboardLayout>
         );
     }

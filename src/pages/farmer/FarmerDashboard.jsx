@@ -16,6 +16,7 @@ import Button from '../../components/ui/Button';
 import { chartTheme } from '../../utils/chartConfig';
 import useMediaQuery from '../../utils/useMediaQuery';
 import { api, authHelpers } from '../../utils/api';
+import Loader from '../../components/ui/Loader';
 
 const FarmerDashboard = () => {
     const navigate = useNavigate();
@@ -42,10 +43,12 @@ const FarmerDashboard = () => {
             const userData = authHelpers.getUser();
             setUser(userData);
 
-            // Fetch batches and analytics in parallel
+            // Fetch batches and analytics in parallel with minimum load time of 3.4s
+            const minLoadTime = 3400;
             const [batchesRes, analyticsRes] = await Promise.all([
                 api.farmer.getBatches({ limit: 5 }),
-                api.farmer.getAnalytics()
+                api.farmer.getAnalytics(),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
             ]);
 
             if (batchesRes.success) {
@@ -95,12 +98,7 @@ const FarmerDashboard = () => {
     if (loading) {
         return (
             <DashboardLayout role="farmer">
-                <div className="flex items-center justify-center h-96">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-                        <p className="text-slate-600">Loading dashboard...</p>
-                    </div>
-                </div>
+                <Loader text="Loading dashboard..." />
             </DashboardLayout>
         );
     }

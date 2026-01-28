@@ -5,6 +5,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
+import Loader from '../../components/ui/Loader';
 import { api } from '../../utils/api';
 
 const MyBatches = () => {
@@ -22,7 +23,12 @@ const MyBatches = () => {
     const fetchBatches = async () => {
         try {
             setLoading(true);
-            const res = await api.farmer.getBatches();
+            const minLoadTime = 3400;
+            const [res] = await Promise.all([
+                api.farmer.getBatches(),
+                new Promise(resolve => setTimeout(resolve, minLoadTime))
+            ]);
+
             if (res.success) {
                 setBatches(res.data);
             } else {
@@ -100,7 +106,7 @@ const MyBatches = () => {
 
                     {loading ? (
                         <div className="flex justify-center py-12">
-                            <Loader2 className="animate-spin text-sage-500" size={32} />
+                            <Loader text="Loading batches..." />
                         </div>
                     ) : error ? (
                         <div className="text-center py-12 text-red-500">

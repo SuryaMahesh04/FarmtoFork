@@ -7,6 +7,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { api } from '../../utils/api';
+import Loader from '../../components/ui/Loader';
 
 const BatchDetail = () => {
     const { batchId } = useParams();
@@ -19,7 +20,12 @@ const BatchDetail = () => {
         const fetchBatch = async () => {
             try {
                 setLoading(true);
-                const res = await api.farmer.getBatchById(batchId);
+                const minLoadTime = 3400;
+                const [res] = await Promise.all([
+                    api.farmer.getBatchById(batchId),
+                    new Promise(resolve => setTimeout(resolve, minLoadTime))
+                ]);
+
                 if (res.success) {
                     setBatch(res.data);
                 } else {
@@ -40,9 +46,7 @@ const BatchDetail = () => {
 
     if (loading) return (
         <DashboardLayout role="farmer">
-            <div className="flex justify-center items-center h-96">
-                <Loader2 className="animate-spin text-sage-500" size={48} />
-            </div>
+            <Loader text="Loading batch details..." />
         </DashboardLayout>
     );
 
