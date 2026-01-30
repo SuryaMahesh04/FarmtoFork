@@ -5,6 +5,7 @@
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
@@ -29,6 +30,47 @@ Farm2Fork is a modern agricultural supply chain platform designed to bring trans
 - **Analytics Dashboard**: Comprehensive insights for all stakeholders
 - **Secure Authentication**: Role-based access control with JWT authentication
 - **Modern UI/UX**: Beautiful, responsive interface built with React and Tailwind CSS
+
+## 📸 Screenshots
+
+### Landing Page
+![Landing Page](./screenshots/landing-page.png)
+*Modern, responsive landing page with engaging animations*
+
+### Authentication
+![Login Page](./screenshots/login.png)
+*Secure role-based login interface*
+
+![Signup Page](./screenshots/signup.png)
+*User-friendly registration with role selection*
+
+### Farmer Dashboard
+![Farmer Dashboard](./screenshots/farmer-dashboard.png)
+*Comprehensive farmer dashboard with batch management and analytics*
+
+![Create Batch](./screenshots/create-batch.png)
+*Intuitive batch creation interface*
+
+
+### Transporter Dashboard
+![Transporter Dashboard](./screenshots/transporter-dashboard.png)
+*Real-time shipment tracking and route management*
+
+### Distributor Dashboard
+![Distributor Dashboard](./screenshots/distributor-dashboard.png)
+*Inventory management and quality control interface*
+
+### Retailer Dashboard
+![Retailer Dashboard](./screenshots/retailer-dashboard.png)
+*Product management and sales tracking*
+
+### Product Traceability
+![Product Trace](./screenshots/product-trace.png)
+*Consumer-facing product traceability feature with complete supply chain journey*
+
+---
+
+> 💡 **Note**: To add your screenshots, create a `screenshots` folder in the project root and place your images there. Update the filenames in the links above to match your screenshot names.
 
 ## ✨ Features
 
