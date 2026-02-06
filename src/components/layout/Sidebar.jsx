@@ -53,6 +53,7 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: LayoutDashboard, label: 'Dashboard', path: '/transporter' },
                     { icon: Truck, label: 'My Vehicles', path: '/transporter/vehicles' },
                     { icon: Package, label: 'Shipments', path: '/transporter/shipments' },
+                    { icon: Users, label: 'Drivers', path: '/transporter/drivers' },
                     { icon: MapPin, label: 'Routes', path: '/transporter/routes' },
                     { icon: MessageSquareText, label: 'Assistant Help', path: '/transporter/assistant' },
                     ...common
