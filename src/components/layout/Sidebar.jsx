@@ -15,7 +15,8 @@ import {
     LogOut,
     X,
     MapPin,
-    User
+    User,
+    MessageSquareText
 } from 'lucide-react';
 import logo from '../../assets/logo2.png';
 
@@ -50,7 +51,11 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
             case 'transporter':
                 return [
                     { icon: LayoutDashboard, label: 'Dashboard', path: '/transporter' },
-                    { icon: Truck, label: 'Shipments', path: '/transporter/shipments' },
+                    { icon: Truck, label: 'My Vehicles', path: '/transporter/vehicles' },
+                    { icon: Package, label: 'Shipments', path: '/transporter/shipments' },
+                    { icon: Users, label: 'Drivers', path: '/transporter/drivers' },
+                    { icon: MapPin, label: 'Routes', path: '/transporter/routes' },
+                    { icon: MessageSquareText, label: 'Assistant Help', path: '/transporter/assistant' },
                     ...common
                 ];
             case 'distributor':

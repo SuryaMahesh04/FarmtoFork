@@ -112,6 +112,27 @@ export const api = {
             method: 'PUT'
         }),
     },
+
+    // Driver APIs
+    driver: {
+        create: (driverData) => api.request('/drivers', {
+            method: 'POST',
+            body: JSON.stringify(driverData),
+        }),
+        getAll: () => api.request('/drivers'),
+        getById: (id) => api.request(`/drivers/${id}`),
+        update: (id, data) => api.request(`/drivers/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+        delete: (id) => api.request(`/drivers/${id}`, {
+            method: 'DELETE',
+        }),
+        assignVehicle: (id, vehicleId) => api.request(`/drivers/${id}/assign-vehicle`, {
+            method: 'PUT',
+            body: JSON.stringify({ vehicleId }),
+        }),
+    },
 };
 
 // Auth helper functions

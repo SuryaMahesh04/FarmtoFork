@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const DataTable = ({ columns, data, onRowClick, actions }) => {
+const DataTable = ({ columns, data, onRowClick, actions, hideToolbar = false }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = 5;
@@ -10,7 +10,7 @@ const DataTable = ({ columns, data, onRowClick, actions }) => {
     // Filter data
     const filteredData = data.filter(row =>
         Object.values(row).some(value =>
-            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+            value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
 
@@ -24,6 +24,7 @@ const DataTable = ({ columns, data, onRowClick, actions }) => {
     return (
         <div className="glass-panel rounded-2xl overflow-hidden border border-sage-100 shadow-sm">
             {/* Table Header Filter Area */}
+            {!hideToolbar && (
             <div className="p-4 border-b border-sage-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white/50">
                 <div className="relative w-full md:w-64">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
@@ -43,6 +44,7 @@ const DataTable = ({ columns, data, onRowClick, actions }) => {
                     {actions}
                 </div>
             </div>
+            )}
 
             {/* Table */}
             <div className="overflow-x-auto">

@@ -21,7 +21,10 @@ import Shipments from './pages/farmer/Shipments';
 
 import TransporterDashboard from './pages/transporter/TransporterDashboard';
 import TransporterShipments from './pages/transporter/Shipments';
+import TransporterDrivers from './pages/transporter/Drivers';
 import TransporterRoutes from './pages/transporter/Routes';
+import TransporterVehicles from './pages/transporter/Vehicles';
+import TransporterAssistant from './pages/transporter/AssistantHelp';
 import TransporterSettings from './pages/transporter/Settings';
 import TransporterAnalytics from './pages/transporter/Analytics';
 import ShipmentDetail from './pages/transporter/ShipmentDetail';
@@ -42,6 +45,9 @@ import AdminPlatformStats from './pages/admin/PlatformStats';
 import AdminSettings from './pages/admin/Settings';
 import TraceProduct from './pages/consumer/TraceProduct';
 import Notifications from './pages/Notifications';
+import DriverDashboard from './pages/driver/DriverDashboard';
+import DriverVehicle from './pages/driver/DriverVehicle';
+import DriverShipments from './pages/driver/DriverShipments';
 
 function App() {
     return (
@@ -74,11 +80,19 @@ function App() {
                     <Route path="/farmer/shipment/:shipmentId" element={<ShipmentDetail role="farmer" />} />
 
                     <Route path="/transporter" element={<TransporterDashboard />} />
+                    <Route path="/transporter/vehicles" element={<TransporterVehicles />} />
                     <Route path="/transporter/shipments" element={<TransporterShipments />} />
+                    <Route path="/transporter/drivers" element={<TransporterDrivers />} />
                     <Route path="/transporter/routes" element={<TransporterRoutes />} />
+                    <Route path="/transporter/assistant" element={<TransporterAssistant />} />
                     <Route path="/transporter/settings" element={<TransporterSettings />} />
                     <Route path="/transporter/analytics" element={<TransporterAnalytics />} />
                     <Route path="/transporter/shipment/:shipmentId" element={<ShipmentDetail role="transporter" />} />
+
+                    {/* Driver Routes */}
+                    <Route path="/driver" element={<DriverDashboard />} />
+                    <Route path="/driver/vehicle" element={<DriverVehicle />} />
+                    <Route path="/driver/shipments" element={<DriverShipments />} />
 
                     <Route path="/distributor" element={<DistributorDashboard />} />
                     <Route path="/distributor/shipments" element={<DistributorShipments />} />
