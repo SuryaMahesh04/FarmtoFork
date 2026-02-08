@@ -19,8 +19,8 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
     const [errors, setErrors] = useState({});
 
     // Filter available vehicles (not assigned or assigned to current driver if editing)
-    const availableVehicles = vehicles.filter(v => 
-        v.status === 'AVAILABLE' || v.status === 'MAINTENANCE' // Assuming simplified logic for now
+    const availableVehicles = vehicles.filter(v =>
+        v.status === 'Available' || v.status === 'Maintenance'
     );
 
     const validate = () => {
@@ -30,7 +30,7 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
         if (!formData.email) newErrors.email = 'Email is required';
         if (!formData.licenseNumber) newErrors.licenseNumber = 'License Number is required';
         if (!formData.licenseExpiry) newErrors.licenseExpiry = 'License Expiry is required';
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -80,7 +80,7 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div 
+            <div
                 className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -89,7 +89,7 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
                         <h2 className="text-xl font-bold text-slate-800">Add New Driver</h2>
                         <p className="text-sm text-slate-500">Register a new driver to your fleet</p>
                     </div>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
                     >
@@ -134,7 +134,7 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
                                 {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
                             </div>
 
-                             <div className="space-y-1.5 md:col-span-2">
+                            <div className="space-y-1.5 md:col-span-2">
                                 <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                                     <Mail size={16} className="text-emerald-600" />
                                     Email Address (for login)
@@ -202,8 +202,8 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
                                 >
                                     <option value="">No Vehicle Assigned</option>
                                     {availableVehicles.map(v => (
-                                        <option key={v.id} value={v.id}>
-                                            {v.registrationNumber} - {v.type} ({v.model})
+                                        <option key={v._id || v.id} value={v._id || v.id}>
+                                            {v.registrationNumber} - {v.name || `${v.make} ${v.model}`} ({v.type})
                                         </option>
                                     ))}
                                 </select>
@@ -213,8 +213,8 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
 
                     <div className="border-t border-slate-100 my-4"></div>
 
-                     {/* Address Info */}
-                     <div className="space-y-4">
+                    {/* Address Info */}
+                    <div className="space-y-4">
                         <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Address</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
@@ -249,15 +249,15 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                        <Button 
-                            variant="secondary" 
+                        <Button
+                            variant="secondary"
                             className="flex-1 justify-center"
                             onClick={onClose}
                             type="button"
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             className="flex-1 justify-center bg-emerald-600 hover:bg-emerald-700 text-white"
                             type="submit"
                         >

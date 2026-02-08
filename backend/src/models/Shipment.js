@@ -26,6 +26,15 @@ const shipmentSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    driver: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    driverStatus: {
+        type: String,
+        enum: ['pending', 'accepted', 'rejected'],
+        default: 'pending'
+    },
     transporterStatus: {
         type: String,
         enum: ['pending', 'accepted', 'rejected'],
@@ -38,7 +47,7 @@ const shipmentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'accepted', 'at_pickup', 'picked_up', 'in-transit', 'delivered', 'rejected'],
+        enum: ['pending', 'accepted', 'assigned', 'at_pickup', 'picked_up', 'in-transit', 'delivered', 'rejected'],
         default: 'pending'
     },
     trackingUpdates: [{

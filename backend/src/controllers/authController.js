@@ -139,6 +139,26 @@ exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
 
+        // If user is a driver, fetch their driver profile with populated vehicle
+        if (user.role === 'driver') {
+            const Driver = require('../models/Driver');
+            const driverProfile = await Driver.findOne({ user: user._id })
+                .populate({
+                    path: 'assignedVehicle',
+                    select: 'name registrationNumber type make model capacity status'
+                });
+
+            if (driverProfile) {
+                // Attach driver profile to user object
+                const userObj = user.toObject();
+                userObj.driverProfile = driverProfile;
+                return res.json({
+                    success: true,
+                    data: userObj
+                });
+            }
+        }
+
         res.json({
             success: true,
             data: user

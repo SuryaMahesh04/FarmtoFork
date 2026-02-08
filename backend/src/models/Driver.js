@@ -61,7 +61,5 @@ const driverSchema = new mongoose.Schema({
 
 // Index for faster lookups
 driverSchema.index({ transporter: 1 });
-driverSchema.index({ licenseNumber: 1 });
-driverSchema.index({ email: 1 });
 
 module.exports = mongoose.model('Driver', driverSchema);

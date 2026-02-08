@@ -14,7 +14,8 @@ const initialShipments = [
         vehicle: 'MH-15-EF-9101',
         eta: 'Pending',
         status: 'Pending',
-        date: '2025-01-28'
+        date: '2025-01-28',
+        coordinates: { lat: 17.3850, lng: 78.4867 } // Hyderabadish
     },
     // 2. Farmer Request (Pending Assignment)
     {
@@ -27,9 +28,10 @@ const initialShipments = [
         vehicle: 'Pending Assignment',
         eta: 'Pending',
         status: 'Pending',
-        date: '2025-01-29'
+        date: '2025-01-29',
+        coordinates: { lat: 17.6805, lng: 74.0183 }
     },
-    // 3. Wheat to Delhi (On Route)
+    // 3. Wheat to Delhi (On Route - Accepted)
     {
         id: 'TRK-2401',
         type: 'Farmer Request',
@@ -40,9 +42,10 @@ const initialShipments = [
         vehicle: 'MH-01-AB-1234',
         eta: '2 hours',
         status: 'On Route',
-        date: '2025-01-27'
+        date: '2025-01-27',
+        coordinates: { lat: 19.0760, lng: 72.8777 }
     },
-    // 4. Rice to Bangalore (On Route)
+    // 4. Rice to Bangalore (On Route - Accepted)
     {
         id: 'TRK-2402',
         type: 'Farmer Request',
@@ -53,9 +56,10 @@ const initialShipments = [
         vehicle: 'MH-12-CD-5678',
         eta: '5 hours',
         status: 'On Route',
-        date: '2025-01-27'
+        date: '2025-01-27',
+        coordinates: { lat: 18.5204, lng: 73.8567 }
     },
-    // 5. Tomatoes to Hyd (On Route)
+    // 5. Tomatoes to Hyd (Rejected Example)
     {
         id: 'TRK-2403',
         type: 'Farmer Request',
@@ -63,10 +67,11 @@ const initialShipments = [
         destination: 'Hyderabad',
         cargo: 'Tomatoes',
         capacity: '8 Tons',
-        vehicle: 'MH-15-EF-9101',
-        eta: '3 hours',
-        status: 'On Route',
-        date: '2025-01-26'
+        vehicle: 'N/A',
+        eta: 'N/A',
+        status: 'Rejected',
+        date: '2025-01-26',
+        coordinates: { lat: 19.9975, lng: 73.7898 }
     },
     // 6. Corporate Order (Delivered)
     {
@@ -79,9 +84,10 @@ const initialShipments = [
         vehicle: 'MH-40-BL-7777',
         eta: 'Delivered',
         status: 'Delivered',
-        date: '2025-01-25'
+        date: '2025-01-25',
+        coordinates: { lat: 21.1458, lng: 79.0882 }
     },
-    // 7. Emergency Supply (On Route)
+    // 7. Emergency Supply (Accepted Example)
     {
         id: 'EMG-3005',
         type: 'Emergency Supply',
@@ -91,8 +97,9 @@ const initialShipments = [
         capacity: '2 Tons',
         vehicle: 'TS-09-EM-1080',
         eta: '45 mins',
-        status: 'On Route',
-        date: '2025-01-28'
+        status: 'Accepted',
+        date: '2025-01-28',
+        coordinates: { lat: 17.3850, lng: 78.4867 }
     },
     // 8. Farmer Request (Pending)
     {
@@ -105,7 +112,8 @@ const initialShipments = [
         vehicle: 'Pending Assignment',
         eta: 'Pending',
         status: 'Pending',
-        date: '2025-01-30'
+        date: '2025-01-30',
+        coordinates: { lat: 29.6857, lng: 76.9905 }
     },
     // 9. Personal Shipment (Delivered)
     {
@@ -118,7 +126,8 @@ const initialShipments = [
         vehicle: 'KA-05-MV-4040',
         eta: 'Delivered',
         status: 'Delivered',
-        date: '2025-01-24'
+        date: '2025-01-24',
+        coordinates: { lat: 12.9716, lng: 77.5946 }
     },
     // 10. Farmer Request (On Route)
     {
@@ -131,7 +140,8 @@ const initialShipments = [
         vehicle: 'GJ-06-XX-5500',
         eta: '1 hour',
         status: 'On Route',
-        date: '2025-01-28'
+        date: '2025-01-28',
+        coordinates: { lat: 21.1702, lng: 72.8311 }
     },
     // 11. Corporate Order (Pending)
     {
@@ -144,7 +154,8 @@ const initialShipments = [
         vehicle: 'MP-09-ZZ-8888',
         eta: 'Pending',
         status: 'Pending',
-        date: '2025-02-01'
+        date: '2025-02-01',
+        coordinates: { lat: 22.7196, lng: 75.8577 }
     },
     // 12. Delivered Shipment
     {
@@ -157,7 +168,8 @@ const initialShipments = [
         vehicle: 'TS-03-RD-1122',
         eta: 'Delivered',
         status: 'Delivered',
-        date: '2025-01-20'
+        date: '2025-01-20',
+        coordinates: { lat: 17.9689, lng: 79.5941 }
     },
     // 13. Pending Request
     {
@@ -170,7 +182,8 @@ const initialShipments = [
         vehicle: 'Pending Assignment',
         eta: 'Pending',
         status: 'Pending',
-        date: '2025-01-31'
+        date: '2025-01-31',
+        coordinates: { lat: 16.3067, lng: 80.4365 }
     }
 ];
 
@@ -187,12 +200,19 @@ export const shipmentStore = {
     add: (shipment) => {
         const shipments = shipmentStore.getAll();
         const newShipment = { ...shipment };
-        
+
         // Ensure status consistency
         if (!newShipment.status) newShipment.status = 'Pending';
         if (!newShipment.eta) newShipment.eta = 'Pending';
-        
+
         const updated = [newShipment, ...shipments];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+    },
+
+    update: (id, updates) => {
+        const shipments = shipmentStore.getAll();
+        const updated = shipments.map(s => s.id === id ? { ...s, ...updates } : s);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
         return updated;
     },
