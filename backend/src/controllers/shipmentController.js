@@ -1,11 +1,12 @@
 const Shipment = require('../models/Shipment');
 const Batch = require('../models/Batch');
 const User = require('../models/User');
+const Driver = require('../models/Driver');
 const Notification = require('../models/Notification');
 
 exports.createShipment = async (req, res) => {
     try {
-        const { batchId, distributorId, transporterId } = req.body;
+        const { batchId, distributorId, transporterId, coordinates, date } = req.body;
         const farmerId = req.user.id;
 
         // Verify batch ownership
@@ -27,6 +28,8 @@ exports.createShipment = async (req, res) => {
             batch: batchId,
             distributor: distributorId,
             transporter: transporterId,
+            coordinates: coordinates, // Assuming input
+            date: date || new Date(),
             trackingUpdates: [{
                 status: 'pending',
                 location: 'Origin',
@@ -79,13 +82,16 @@ exports.getShipments = async (req, res) => {
             query.transporter = req.user.id;
         } else if (req.user.role === 'distributor') {
             query.distributor = req.user.id;
+        } else if (req.user.role === 'driver') {
+            query.driver = req.user.id; // Correctly filter for driver
         }
 
         const shipments = await Shipment.find(query)
             .populate('farmer', 'profile.fullName profile.address profile.village profile.district profile.city profile.state')
-            .populate('batch', 'batchId crop variety quantity')
+            .populate('batch', 'batchId crop variety quantity unit')
             .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state')
             .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state')
+            .populate('driver', 'profile.fullName profile.mobile')
             .sort({ createdAt: -1 });
 
         res.json({
@@ -107,7 +113,8 @@ exports.getShipmentById = async (req, res) => {
             .populate('farmer', 'profile.fullName profile.mobile profile.address profile.village profile.district profile.city profile.state')
             .populate('batch')
             .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state profile.district')
-            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state');
+            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state')
+            .populate('driver', 'profile.fullName profile.mobile');
 
         if (!shipment) {
             return res.status(404).json({ success: false, message: 'Shipment not found' });
@@ -123,6 +130,65 @@ exports.getShipmentById = async (req, res) => {
     }
 };
 
+exports.assignDriver = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { driverId } = req.body;
+        const transporterId = req.user.id;
+
+        const shipment = await Shipment.findById(id);
+
+        if (!shipment) {
+            return res.status(404).json({ success: false, message: 'Shipment not found' });
+        }
+
+        // Verify transporter owns this shipment
+        if (shipment.transporter.toString() !== transporterId) {
+            return res.status(403).json({ success: false, message: 'Not authorized to modify this shipment' });
+        }
+
+        // Find driver by ID and verify ownership
+        const driverDoc = await Driver.findOne({ _id: driverId, transporter: transporterId });
+
+        if (!driverDoc) {
+            console.log(`Driver not found for ID: ${driverId} and Transporter: ${transporterId}`);
+            return res.status(404).json({ success: false, message: 'Driver not found or unauthorized' });
+        }
+
+        shipment.driver = driverDoc.user; // Assign USER ID of the driver
+        shipment.status = 'assigned';
+        shipment.driverStatus = 'pending';
+
+        shipment.trackingUpdates.push({
+            status: 'assigned',
+            location: 'System Update',
+            notes: `Driver ${driverDoc.fullName} assigned by transporter`
+        });
+
+        await shipment.save();
+
+        // Notify Driver
+        await Notification.create({
+            recipient: driverDoc.user,
+            sender: transporterId,
+            type: 'shipment_assignment',
+            message: `You have been assigned to shipment ${shipment.shipmentId}`,
+            relatedId: shipment._id,
+            relatedModel: 'Shipment'
+        });
+
+        res.json({
+            success: true,
+            data: shipment,
+            message: 'Driver assigned successfully'
+        });
+
+    } catch (error) {
+        console.error('Assign driver error:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
 exports.updateShipmentStatus = async (req, res) => {
     try {
         const { id } = req.params;
@@ -133,102 +199,63 @@ exports.updateShipmentStatus = async (req, res) => {
             .populate('farmer', 'profile.fullName profile.mobile profile.address profile.village profile.district profile.city profile.state')
             .populate('batch')
             .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state profile.district')
-            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state');
+            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state')
+            .populate('driver', 'profile.fullName');
 
         if (!shipment) {
             return res.status(404).json({ success: false, message: 'Shipment not found' });
         }
 
-        // Verify if user is authorized involved party
-        if (shipment.transporter._id.toString() !== userId && shipment.distributor._id.toString() !== userId) {
+        // Authorization Check: Transporter, Distributor, or Driver
+        const isTransporter = shipment.transporter._id.toString() === userId;
+        const isDistributor = shipment.distributor._id.toString() === userId;
+        const isDriver = shipment.driver && shipment.driver._id.toString() === userId;
+
+        if (!isTransporter && !isDistributor && !isDriver) {
             return res.status(403).json({ success: false, message: 'Not authorized' });
         }
 
-        // Fetch current user (Distributor/Transporter) to get name for notes/notifications
+        // Fetch current user details for notes
         const currentUser = await User.findById(userId);
-        const actionerName = currentUser?.profile?.companyName || currentUser?.profile?.fullName || 'Partner';
-
-        // IDEMPOTENCY CHECK: Prevent duplicate updates
-        if (status === 'accepted') {
-            // Check IDs using _id.toString() because they are populated objects now
-            if ((shipment.transporter._id.toString() === userId && shipment.transporterStatus === 'accepted') ||
-                (shipment.distributor._id.toString() === userId && shipment.distributorStatus === 'accepted')) {
-                return res.json({ success: true, data: shipment, message: 'Already accepted' });
-            }
-        } else if (status === 'rejected') {
-            if ((shipment.transporter._id.toString() === userId && shipment.transporterStatus === 'rejected') ||
-                (shipment.distributor._id.toString() === userId && shipment.distributorStatus === 'rejected')) {
-                return res.json({ success: true, data: shipment, message: 'Already rejected' });
-            }
-        } else {
-            // For general status updates, check if already in that status
-            if (shipment.status === status) {
-                return res.json({ success: true, data: shipment, message: `Already in ${status} status` });
-            }
-        }
-
-        // helpers to get location string
-        const getFarmerLocation = () => {
-            // ... existing logic works with populated objects too
-            const addr = shipment.farmer?.profile?.address;
-            return addr?.city || addr?.formattedAddress || shipment.farmer?.profile?.city || 'Farm Location';
-        };
-
-        const getDistributorLocation = () => {
-            const addr = shipment.distributor?.profile?.address;
-            return addr?.city || addr?.formattedAddress || shipment.distributor?.profile?.city || 'Distributor Warehouse';
-        };
+        const actionerName = currentUser?.profile?.companyName || currentUser?.profile?.fullName || 'User';
 
         let updateLocation = 'System Update';
         let updateNotes = `Status updated to ${status} by ${actionerName}`;
 
-        // Handle Acceptance Phase (Granular)
+        // Handle specific logic
         if (status === 'accepted') {
-            if (shipment.transporter._id.toString() === userId) {
-                shipment.transporterStatus = 'accepted';
-            } else if (shipment.distributor._id.toString() === userId) {
-                shipment.distributorStatus = 'accepted';
-            }
+            if (isTransporter) shipment.transporterStatus = 'accepted';
+            if (isDistributor) shipment.distributorStatus = 'accepted';
+            if (isDriver) shipment.driverStatus = 'accepted';
 
-            // Check if BOTH have accepted to move global status
+            // Global acceptance check
             if (shipment.transporterStatus === 'accepted' && shipment.distributorStatus === 'accepted') {
                 shipment.status = 'accepted';
                 updateLocation = 'Virtual Handshake';
                 updateNotes = 'Both parties accepted. Ready for pickup.';
-
-                shipment.trackingUpdates.push({
-                    status: 'accepted',
-                    location: updateLocation,
-                    notes: updateNotes
-                });
             } else {
-                // One party accepted, still pending global acceptance
-                shipment.trackingUpdates.push({
-                    status: 'pending',
-                    location: 'System Update',
-                    notes: `${actionerName} accepted the request. Waiting for other party.`
-                });
+                // Partial acceptance
+                updateNotes = `${actionerName} accepted the request.`;
             }
-        } else if (status === 'rejected' || status === 'declined') {
-            // Handle Rejection
-            if (shipment.transporter._id.toString() === userId) {
-                shipment.transporterStatus = 'rejected';
-            } else if (shipment.distributor._id.toString() === userId) {
-                shipment.distributorStatus = 'rejected';
-            }
-
-            // If any party rejects, the shipment is effectively rejected/cancelled
+        } else if (status === 'rejected') {
+            if (isTransporter) shipment.transporterStatus = 'rejected';
+            if (isDistributor) shipment.distributorStatus = 'rejected';
+            // Driver rejection? Maybe 'declined'
             shipment.status = 'rejected';
-            shipment.trackingUpdates.push({
-                status: 'rejected',
-                location: 'System Update',
-                notes: `Shipment rejected by ${actionerName}`
-            });
         } else {
-            // Normal flow for subsequent statuses (at_pickup, picked_up, etc.)
+            // Other statuses (picked_up, etc)
             shipment.status = status;
 
-            // Determine Location based on Status
+            // Location Logic
+            const getFarmerLocation = () => {
+                const addr = shipment.farmer?.profile?.address;
+                return addr?.city || addr?.formattedAddress || 'Farm Location';
+            };
+            const getDistributorLocation = () => {
+                const addr = shipment.distributor?.profile?.address;
+                return addr?.city || addr?.formattedAddress || 'Distributor Warehouse';
+            };
+
             if (status === 'at_pickup' || status === 'picked_up') {
                 updateLocation = getFarmerLocation();
             } else if (status === 'in-transit') {
@@ -236,36 +263,51 @@ exports.updateShipmentStatus = async (req, res) => {
             } else if (status === 'delivered') {
                 updateLocation = getDistributorLocation();
             }
-
-            shipment.trackingUpdates.push({
-                status: status,
-                location: updateLocation,
-                notes: updateNotes
-            });
         }
+
+        // Add update to history
+        shipment.trackingUpdates.push({
+            status: status,
+            location: updateLocation,
+            notes: updateNotes
+        });
 
         await shipment.save();
 
-        // Re-fetch with full population to ensure frontend gets complete data (Safeguard against Mongoose depopulation on save)
-        const updatedShipment = await Shipment.findById(id)
-            .populate('farmer', 'profile.fullName profile.mobile profile.address profile.village profile.district profile.city profile.state')
-            .populate('batch')
-            .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state profile.district')
-            .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state');
+        // Update Vehicle Status if driver is assigned
+        if (shipment.driver) {
+            try {
+                const Vehicle = require('../models/Vehicle');
+                const Driver = require('../models/Driver');
 
-        // Notify Farmer
-        await Notification.create({
-            recipient: shipment.farmer._id,
-            sender: userId,
-            type: 'shipment_update',
-            message: `${actionerName} marked shipment as ${status === 'accepted' ? 'accepted' : status.replace('_', ' ')}`,
-            relatedId: shipment._id,
-            relatedModel: 'Shipment'
-        });
+                // Find driver profile
+                const driverDoc = await Driver.findOne({ user: shipment.driver });
+
+                if (driverDoc && driverDoc.assignedVehicle) {
+                    let newVehicleStatus = null;
+
+                    // Map shipment status to vehicle status
+                    if (['at_pickup', 'picked_up', 'in-transit'].includes(status)) {
+                        newVehicleStatus = 'On Route';
+                    } else if (['delivered', 'completed', 'cancelled', 'rejected'].includes(status)) {
+                        newVehicleStatus = 'Available';
+                    }
+
+                    if (newVehicleStatus) {
+                        await Vehicle.findByIdAndUpdate(driverDoc.assignedVehicle, {
+                            status: newVehicleStatus
+                        });
+                    }
+                }
+            } catch (vError) {
+                console.error('Failed to update vehicle status:', vError);
+                // Don't fail the request, just log it
+            }
+        }
 
         res.json({
             success: true,
-            data: updatedShipment
+            data: shipment
         });
     } catch (error) {
         console.error('Update status error:', error);

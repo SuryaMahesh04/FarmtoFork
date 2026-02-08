@@ -133,7 +133,6 @@ const Settings = () => {
                 fullName: formData.fullName,
                 mobile: formData.mobile,
                 state: formData.state,
-                state: formData.state,
                 district: formData.district,
                 village: formData.village,
                 address: formData.address, // Save Address Object

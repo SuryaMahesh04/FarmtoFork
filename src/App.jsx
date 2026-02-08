@@ -21,6 +21,7 @@ import Shipments from './pages/farmer/Shipments';
 
 import TransporterDashboard from './pages/transporter/TransporterDashboard';
 import TransporterShipments from './pages/transporter/Shipments';
+import ShipmentRequests from './pages/transporter/ShipmentRequests';
 import TransporterDrivers from './pages/transporter/Drivers';
 import TransporterRoutes from './pages/transporter/Routes';
 import TransporterVehicles from './pages/transporter/Vehicles';
@@ -80,6 +81,7 @@ function App() {
                     <Route path="/farmer/shipment/:shipmentId" element={<ShipmentDetail role="farmer" />} />
 
                     <Route path="/transporter" element={<TransporterDashboard />} />
+                    <Route path="/transporter/requests" element={<ShipmentRequests />} />
                     <Route path="/transporter/vehicles" element={<TransporterVehicles />} />
                     <Route path="/transporter/shipments" element={<TransporterShipments />} />
                     <Route path="/transporter/drivers" element={<TransporterDrivers />} />

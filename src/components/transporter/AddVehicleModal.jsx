@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import { X, Truck, User, Hash, Weight, Star, Phone } from 'lucide-react';
+import { X, Truck, Hash, Weight } from 'lucide-react';
 import Button from '../ui/Button';
 
 const AddVehicleModal = ({ isOpen, onClose, onAdd }) => {
     const [formData, setFormData] = useState({
+        vehicleName: '',
         type: 'Open Truck',
         customType: '',
         plate: '',
         capacity: '',
-        capacityUnit: 'Tons',
-        driverName: '',
-        driverPhone: '',
-        driverExp: ''
+        capacityUnit: 'Tons'
     });
 
     if (!isOpen) return null;
@@ -19,22 +17,20 @@ const AddVehicleModal = ({ isOpen, onClose, onAdd }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         const finalType = formData.type === 'Other' ? formData.customType : formData.type;
-        
+
         onAdd({
             ...formData,
             type: finalType
         });
-        
+
         onClose();
-        setFormData({ 
-            type: 'Open Truck', 
-            customType: '', 
-            plate: '', 
-            capacity: '', 
-            capacityUnit: 'Tons',
-            driverName: '', 
-            driverPhone: '', 
-            driverExp: '' 
+        setFormData({
+            vehicleName: '',
+            type: 'Open Truck',
+            customType: '',
+            plate: '',
+            capacity: '',
+            capacityUnit: 'Tons'
         });
     };
 
@@ -54,7 +50,7 @@ const AddVehicleModal = ({ isOpen, onClose, onAdd }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 m-4 relative animate-in zoom-in-95 duration-200">
-                <button 
+                <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
@@ -72,6 +68,22 @@ const AddVehicleModal = ({ isOpen, onClose, onAdd }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Vehicle Name */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle Name</label>
+                        <div className="relative">
+                            <Truck className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                            <input
+                                type="text"
+                                name="vehicleName"
+                                placeholder="e.g. Truck Alpha, Express 1"
+                                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                value={formData.vehicleName}
+                                onChange={handleChange}
+                            />
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-slate-600 uppercase">Vehicle Type</label>
@@ -151,58 +163,7 @@ const AddVehicleModal = ({ isOpen, onClose, onAdd }) => {
                         </div>
                     </div>
 
-                    <div className="border-t border-slate-100 my-4 pt-4">
-                        <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                            <User size={16} className="text-emerald-600" />
-                            Driver Details
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-slate-500">Driver Name</label>
-                                <input
-                                    type="text"
-                                    name="driverName"
-                                    placeholder="Full Name"
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                    required
-                                    value={formData.driverName}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-slate-500">Phone Number</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-2.5 text-slate-400" size={14} />
-                                    <input
-                                        type="tel"
-                                        name="driverPhone"
-                                        placeholder="00000 00000"
-                                        className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                        required
-                                        value={formData.driverPhone}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-span-2 space-y-1">
-                                <label className="text-xs font-medium text-slate-500">Experience (Years)</label>
-                                <div className="relative">
-                                    <Star className="absolute left-3 top-2.5 text-slate-400" size={14} />
-                                    <input
-                                        type="number"
-                                        name="driverExp"
-                                        placeholder="e.g. 5"
-                                        className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                        value={formData.driverExp}
-                                        onChange={handleChange}
-                                        min="0"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
                         <button
                             type="button"
                             onClick={onClose}

@@ -6,6 +6,10 @@ const vehicleSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    name: {
+        type: String,
+        trim: true
+    },
     registrationNumber: {
         type: String,
         required: [true, 'Registration number is required'],
@@ -13,25 +17,33 @@ const vehicleSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        required: [true, 'Vehicle type is required'],
-        enum: ['Truck', 'Van', 'Mini Truck', 'Container', 'Other']
+        required: [true, 'Vehicle type is required']
+    },
+    make: {
+        type: String,
+        default: 'Generic'
     },
     model: {
         type: String,
         required: [true, 'Vehicle model is required']
     },
     capacity: {
-        type: Number,
-        required: [true, 'Capacity (in kg) is required']
+        type: String,
+        required: [true, 'Capacity is required']
     },
     status: {
         type: String,
-        enum: ['AVAILABLE', 'ON ROUTE', 'MAINTENANCE'],
-        default: 'AVAILABLE'
+        enum: ['Available', 'On Route', 'In Transit', 'Maintenance'],
+        default: 'Available'
     },
     fuelType: {
         type: String,
         required: [true, 'Fuel type is required']
+    },
+    assignedDriver: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Driver',
+        default: null
     },
     lastServiceDate: {
         type: Date

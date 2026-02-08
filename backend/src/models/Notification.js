@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['shipment_request', 'shipment_accepted', 'shipment_rejected', 'general'],
+        enum: ['shipment_request', 'shipment_accepted', 'shipment_rejected', 'shipment_assignment', 'driver_arrival', 'pickup_completed', 'in_transit', 'delivered', 'general'],
         required: true
     },
     message: {

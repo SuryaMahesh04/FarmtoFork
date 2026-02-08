@@ -6,6 +6,7 @@ const {
     getShipments,
     getShipmentById,
     updateShipmentStatus,
+    assignDriver,
     getDistributors,
     getTransporters
 } = require('../controllers/shipmentController');
@@ -18,10 +19,11 @@ router.get('/transporters', getTransporters);
 
 // Authorize all relevant roles for shared routes
 router.post('/', authorize('farmer'), createShipment);
-router.get('/', authorize('farmer', 'transporter', 'distributor'), getShipments);
+router.get('/', authorize('farmer', 'transporter', 'distributor', 'driver'), getShipments); // Added 'driver'
 
 // Parameter routes LAST
-router.get('/:id', authorize('farmer', 'transporter', 'distributor'), getShipmentById);
-router.put('/:id/status', authorize('transporter', 'distributor'), updateShipmentStatus);
+router.put('/:id/assign', authorize('transporter'), assignDriver); // Assign Driver
+router.get('/:id', authorize('farmer', 'transporter', 'distributor', 'driver'), getShipmentById); // Added 'driver'
+router.put('/:id/status', authorize('transporter', 'distributor', 'driver'), updateShipmentStatus); // Added 'driver'
 
 module.exports = router;

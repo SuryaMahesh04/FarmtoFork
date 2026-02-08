@@ -6,30 +6,45 @@ import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import AddDriverModal from '../../components/transporter/AddDriverModal';
 import DriverCredentialsModal from '../../components/transporter/DriverCredentialsModal';
+import AssignVehicleModal from '../../components/transporter/AssignVehicleModal';
 import { api } from '../../utils/api';
-import { vehicleStore } from '../../utils/vehicleStore';
 
 const Drivers = () => {
     const [drivers, setDrivers] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+    // Vehicles state for assignment
     const [vehicles, setVehicles] = useState([]);
-    
+
     // Credentials Modal State
     const [credentials, setCredentials] = useState(null);
     const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
 
+    // Assign Vehicle Modal State
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [selectedDriverForAssignment, setSelectedDriverForAssignment] = useState(null);
+
     // Refresh Data
     const refreshData = async () => {
         try {
-            const response = await api.driver.getAll();
-            if (response.success) {
-                setDrivers(response.data);
+            setLoading(true);
+            const [driversRes, vehiclesRes] = await Promise.all([
+                api.driver.getAll(),
+                api.vehicle.getAll()
+            ]);
+
+            if (driversRes.success) {
+                setDrivers(driversRes.data);
             }
-            const allVehicles = vehicleStore.getAll();
-            setVehicles(allVehicles);
+            if (vehiclesRes.success) {
+                setVehicles(vehiclesRes.data);
+            }
         } catch (error) {
-            console.error('Failed to fetch drivers:', error);
+            console.error('Failed to fetch data:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -65,21 +80,33 @@ const Drivers = () => {
         }
     };
 
-    const getAssignedVehicle = (vehicleId) => {
-        if (!vehicleId) return null;
-        return vehicles.find(v => v.id === vehicleId);
+    const openAssignModal = (driver) => {
+        setSelectedDriverForAssignment(driver);
+        setIsAssignModalOpen(true);
+    };
+
+    const handleAssignVehicle = async (driverId, vehicleId) => {
+        try {
+            const response = await api.driver.assignVehicle(driverId, vehicleId);
+            if (response.success) {
+                refreshData();
+                setIsAssignModalOpen(false);
+            }
+        } catch (error) {
+            alert(error.message || 'Failed to assign vehicle');
+        }
     };
 
     // Filter Logic
-    const filteredDrivers = drivers.filter(d => 
+    const filteredDrivers = drivers.filter(d =>
         (d.fullName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (d.licenseNumber?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (d.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     const columns = [
-        { 
-            header: 'Driver Name', 
+        {
+            header: 'Driver Name',
             accessor: 'fullName',
             render: (row) => (
                 <div className="flex items-center gap-3">
@@ -93,8 +120,8 @@ const Drivers = () => {
                 </div>
             )
         },
-        { 
-            header: 'Contact', 
+        {
+            header: 'Contact',
             accessor: 'phone',
             render: (row) => (
                 <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -103,8 +130,8 @@ const Drivers = () => {
                 </div>
             )
         },
-        { 
-            header: 'License', 
+        {
+            header: 'License',
             accessor: 'licenseNumber',
             render: (row) => (
                 <div className="flex items-center gap-2">
@@ -113,40 +140,49 @@ const Drivers = () => {
                 </div>
             )
         },
-        { 
-            header: 'Assigned Vehicle', 
-            accessor: 'assignedVehicleId',
+        {
+            header: 'Assigned Vehicle',
+            accessor: 'assignedVehicle',
             render: (row) => {
-                const vehicle = getAssignedVehicle(row.assignedVehicleId);
+                // Determine if assignedVehicle is populated object or ID (it should be populated)
+                const vehicle = row.assignedVehicle && typeof row.assignedVehicle === 'object'
+                    ? row.assignedVehicle
+                    : vehicles.find(v => v._id === row.assignedVehicle);
+
                 return vehicle ? (
                     <div className="flex items-center gap-2 text-sm text-slate-700">
                         <Truck size={14} className="text-emerald-500" />
-                        <span>{vehicle.registrationNumber} ({vehicle.type})</span>
+                        <span>{vehicle.registrationNumber}</span>
+                        <span className="text-xs text-slate-400">({vehicle.type})</span>
                     </div>
                 ) : (
                     <span className="text-xs text-slate-400 italic">Unassigned</span>
                 );
             }
         },
-        { 
-            header: 'Status', 
-            accessor: 'status', 
-            render: (row) => <StatusBadge status={row.status || 'Active'} /> 
+        {
+            header: 'Status',
+            accessor: 'status',
+            render: (row) => <StatusBadge status={row.status || 'Active'} />
         },
         {
             header: 'Actions',
-            accessor: 'id',
+            accessor: '_id',
             render: (row) => (
                 <div className="flex items-center gap-2">
+                    <button
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Assign Vehicle"
+                        onClick={(e) => { e.stopPropagation(); openAssignModal(row); }}
+                    >
+                        <Truck size={16} />
+                    </button>
                     <button className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="View Credentials">
                         <Key size={16} />
                     </button>
-                    <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
-                        <Edit size={16} />
-                    </button>
-                    <button 
+                    <button
                         className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        onClick={(e) => { e.stopPropagation(); handleDeleteDriver(row.id); }}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteDriver(row._id); }}
                         title="Delete"
                     >
                         <Trash2 size={16} />
@@ -164,7 +200,7 @@ const Drivers = () => {
                         <h1 className="text-2xl font-display font-bold text-slate-800">Driver Management</h1>
                         <p className="text-slate-500">Manage your fleet drivers and assignments</p>
                     </div>
-                    <Button 
+                    <Button
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
                         icon={Plus}
                         onClick={() => setIsAddModalOpen(true)}
@@ -176,7 +212,7 @@ const Drivers = () => {
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-3 top-2.5 text-slate-400" size={20} />
-                        <input 
+                        <input
                             type="text"
                             placeholder="Search drivers..."
                             value={searchTerm}
@@ -190,22 +226,30 @@ const Drivers = () => {
                     <DataTable
                         columns={columns}
                         data={filteredDrivers}
+                        loading={loading}
                         emptyMessage="No drivers found. Add your first driver to get started."
                     />
                 </div>
             </div>
 
-            <AddDriverModal 
-                isOpen={isAddModalOpen} 
-                onClose={() => setIsAddModalOpen(false)} 
+            <AddDriverModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
                 onAdd={handleAddDriver}
-                vehicles={vehicles}
             />
 
             <DriverCredentialsModal
                 isOpen={isCredentialsModalOpen}
                 onClose={() => setIsCredentialsModalOpen(false)}
                 credentials={credentials}
+            />
+
+            <AssignVehicleModal
+                isOpen={isAssignModalOpen}
+                onClose={() => setIsAssignModalOpen(false)}
+                driver={selectedDriverForAssignment}
+                vehicles={vehicles}
+                onAssign={handleAssignVehicle}
             />
         </DashboardLayout>
     );

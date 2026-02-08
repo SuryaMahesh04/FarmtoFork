@@ -103,6 +103,10 @@ export const api = {
             method: 'PUT',
             body: JSON.stringify({ status })
         }),
+        assignDriver: (id, driverId) => api.request(`/shipments/${id}/assign`, {
+            method: 'PUT',
+            body: JSON.stringify({ driverId })
+        }),
     },
 
     // Notification APIs
@@ -110,6 +114,23 @@ export const api = {
         getAll: () => api.request('/notifications'),
         markAllRead: () => api.request('/notifications/read-all', {
             method: 'PUT'
+        }),
+    },
+
+    // Vehicle APIs
+    vehicle: {
+        create: (data) => api.request('/vehicles', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        getAll: () => api.request('/vehicles'),
+        getById: (id) => api.request(`/vehicles/${id}`),
+        update: (id, data) => api.request(`/vehicles/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+        delete: (id) => api.request(`/vehicles/${id}`, {
+            method: 'DELETE',
         }),
     },
 
