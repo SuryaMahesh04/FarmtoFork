@@ -54,7 +54,18 @@ const driverSchema = new mongoose.Schema({
     joinDate: {
         type: Date,
         default: Date.now
-    }
+    },
+    dutyStatus: {
+        type: String,
+        enum: ['on-duty', 'off-duty'],
+        default: 'off-duty'
+    },
+    currentLocation: {
+        lat: Number,
+        lng: Number,
+        updatedAt: Date
+    },
+    lastLocationUpdate: Date
 }, {
     timestamps: true
 });

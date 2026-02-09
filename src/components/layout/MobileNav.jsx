@@ -2,7 +2,8 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
     Home, Package, BarChart3, QrCode, Settings,
-    Truck, Warehouse, Store, Shield, Search, MapPin, MoreHorizontal
+    Truck, Warehouse, Store, Shield, Search, MapPin, MoreHorizontal,
+    Users, FileText
 } from 'lucide-react';
 
 const MobileNav = ({ role }) => {
@@ -22,8 +23,11 @@ const MobileNav = ({ role }) => {
             case 'transporter':
                 return [
                     { path: '/transporter', icon: Home, label: 'Home' },
-                    { path: '/transporter/shipments', icon: Truck, label: 'Shipments' },
-                    { path: '/transporter/analytics', icon: BarChart3, label: 'Analytics' },
+                    { path: '/transporter/vehicles', icon: Truck, label: 'Vehicles' },
+                    { path: '/transporter/shipments', icon: Package, label: 'Shipments' },
+                    { path: '/transporter/requests', icon: FileText, label: 'Requests' },
+                    { path: '/transporter/drivers', icon: Users, label: 'Drivers' },
+                    { path: '/transporter/fleet-map', icon: MapPin, label: 'Map' },
                     { path: '/transporter/settings', icon: Settings, label: 'Settings' }
                 ];
             case 'distributor':

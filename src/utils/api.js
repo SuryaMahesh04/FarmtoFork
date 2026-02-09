@@ -153,6 +153,15 @@ export const api = {
             method: 'PUT',
             body: JSON.stringify({ vehicleId }),
         }),
+        updateDutyStatus: (status, location) => api.request('/drivers/duty-status', {
+            method: 'PUT',
+            body: JSON.stringify({ status, location }),
+        }),
+        updateLocation: (lat, lng) => api.request('/drivers/location', {
+            method: 'PUT',
+            body: JSON.stringify({ lat, lng }),
+        }),
+        getStatus: () => api.request('/drivers/me/status'),
     },
 };
 

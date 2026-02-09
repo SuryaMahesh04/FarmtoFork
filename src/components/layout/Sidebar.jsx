@@ -55,8 +55,7 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: Package, label: 'Shipments', path: '/transporter/shipments' },
                     { icon: FileText, label: 'Shipment Requests', path: '/transporter/requests' },
                     { icon: Users, label: 'Drivers', path: '/transporter/drivers' },
-                    { icon: MapPin, label: 'Routes', path: '/transporter/routes' },
-                    { icon: MessageSquareText, label: 'Assistant Help', path: '/transporter/assistant' },
+                    { icon: Truck, label: 'Fleet Map', path: '/transporter/fleet-map' },
                     ...common
                 ];
             case 'distributor':

@@ -162,8 +162,20 @@ const Drivers = () => {
         },
         {
             header: 'Status',
-            accessor: 'status',
-            render: (row) => <StatusBadge status={row.status || 'Active'} />
+            accessor: 'dutyStatus',
+            render: (row) => {
+                const isActive = row.dutyStatus === 'on-duty';
+                return (
+                    <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${isActive
+                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            : 'bg-slate-100 text-slate-500 border border-slate-200'
+                            }`}
+                    >
+                        {isActive ? 'Active' : 'Inactive'}
+                    </span>
+                );
+            }
         },
         {
             header: 'Actions',
