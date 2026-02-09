@@ -303,3 +303,133 @@ exports.assignVehicle = async (req, res) => {
         });
     }
 };
+
+// @desc    Update driver duty status
+// @route   PUT /api/drivers/duty-status
+// @access  Private (Driver only)
+exports.updateDutyStatus = async (req, res) => {
+    try {
+        const { status, location } = req.body; // status: 'on-duty' or 'off-duty'
+
+        if (!['on-duty', 'off-duty'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be on-duty or off-duty'
+            });
+        }
+
+        // Find driver associated with the logged-in user
+        // Note: req.user.id is the User ID. We need to find the Driver record where user field matches.
+        const driver = await Driver.findOne({ user: req.user.id });
+
+        if (!driver) {
+            return res.status(404).json({
+                success: false,
+                message: 'Driver profile not found'
+            });
+        }
+
+        driver.dutyStatus = status;
+
+        // If location provided when toggling (optional)
+        if (location && location.lat && location.lng) {
+            driver.currentLocation = {
+                lat: location.lat,
+                lng: location.lng,
+                updatedAt: new Date()
+            };
+            driver.lastLocationUpdate = new Date();
+        }
+
+        await driver.save();
+
+        res.json({
+            success: true,
+            data: {
+                dutyStatus: driver.dutyStatus,
+                currentLocation: driver.currentLocation
+            }
+        });
+    } catch (error) {
+        console.error('Update Duty Status Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// @desc    Update driver location
+// @route   PUT /api/drivers/location
+// @access  Private (Driver only)
+exports.updateLocation = async (req, res) => {
+    try {
+        const { lat, lng } = req.body;
+
+        if (!lat || !lng) {
+            return res.status(400).json({
+                success: false,
+                message: 'Latitude and longitude are required'
+            });
+        }
+
+        const driver = await Driver.findOne({ user: req.user.id });
+
+        if (!driver) {
+            return res.status(404).json({
+                success: false,
+                message: 'Driver profile not found'
+            });
+        }
+
+        driver.currentLocation = {
+            lat,
+            lng,
+            updatedAt: new Date()
+        };
+        driver.lastLocationUpdate = new Date();
+
+        await driver.save();
+
+        res.json({
+            success: true,
+            message: 'Location updated'
+        });
+    } catch (error) {
+        console.error('Update Location Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// @desc    Get current driver status
+// @route   GET /api/drivers/me/status
+// @access  Private (Driver only)
+exports.getDutyStatus = async (req, res) => {
+    try {
+        const driver = await Driver.findOne({ user: req.user.id });
+
+        if (!driver) {
+            return res.status(404).json({
+                success: false,
+                message: 'Driver profile not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                dutyStatus: driver.dutyStatus,
+                currentLocation: driver.currentLocation,
+                lastLocationUpdate: driver.lastLocationUpdate
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

@@ -8,24 +8,32 @@ import { api } from '../../utils/api';
 
 const Vehicles = () => {
     const [vehicles, setVehicles] = useState([]);
+    const [drivers, setDrivers] = useState([]);
+    const [shipments, setShipments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('All Fleet');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        loadVehicles();
+        loadData();
     }, []);
 
-    const loadVehicles = async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
-            const response = await api.vehicle.getAll();
-            if (response.success) {
-                setVehicles(response.data);
-            }
+            const [vehiclesRes, driversRes, shipmentsRes] = await Promise.all([
+                api.vehicle.getAll(),
+                api.driver.getAll(),
+                api.shipment.getAll()
+            ]);
+
+            if (vehiclesRes.success) setVehicles(vehiclesRes.data);
+            if (driversRes.success) setDrivers(driversRes.data);
+            if (shipmentsRes.success) setShipments(shipmentsRes.data);
+
         } catch (error) {
-            console.error('Failed to load vehicles:', error);
+            console.error('Failed to load data:', error);
         } finally {
             setLoading(false);
         }
@@ -38,14 +46,13 @@ const Vehicles = () => {
                 registrationNumber: newVehicleData.plate,
                 type: newVehicleData.type,
                 capacity: `${newVehicleData.capacity} ${newVehicleData.capacityUnit}`,
-                // Drivers will be assigned separately
                 make: 'Generic',
                 model: 'Truck',
                 fuelType: 'Diesel'
             });
 
             if (response.success) {
-                loadVehicles();
+                loadData();
             }
         } catch (error) {
             console.error('Failed to create vehicle:', error);
@@ -106,8 +113,7 @@ const Vehicles = () => {
         // 2. Search Filter
         const matchesSearch =
             (v.registrationNumber?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (v.type?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (v.assignedDriver?.fullName?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+            (v.type?.toLowerCase() || '').includes(searchQuery.toLowerCase());
 
         // 3. Modal Advanced Filters (Simplified)
         let matchesModal = true;
@@ -203,69 +209,92 @@ const Vehicles = () => {
                         {loading ? (
                             <div className="py-20 text-center text-slate-400">Loading vehicles...</div>
                         ) : filteredVehicles.length > 0 ? (
-                            filteredVehicles.map((vehicle) => (
-                                <div key={vehicle._id} className="grid grid-cols-12 gap-4 px-6 py-6 items-center hover:bg-slate-50/50 transition-colors group">
+                            filteredVehicles.map((vehicle) => {
+                                // Find driver for this vehicle
+                                const assignedDriver = drivers.find(d => {
+                                    const vId = d.assignedVehicle?._id || d.assignedVehicle;
+                                    return vId && String(vId) === String(vehicle._id);
+                                });
 
-                                    {/* Vehicle Profile */}
-                                    <div className="col-span-12 md:col-span-4 flex items-start gap-5">
-                                        <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
-                                            <Truck size={24} className="text-white" strokeWidth={1.5} />
-                                        </div>
-                                        <div className="flex flex-col pt-0.5">
-                                            <h3 className="font-display font-bold text-slate-800 text-lg leading-tight">
-                                                {vehicle.name || `${vehicle.make} ${vehicle.model}`}
-                                            </h3>
-                                            <p className="font-medium text-slate-500 text-sm mt-0.5">{vehicle.type}</p>
-                                            <div className="flex items-center gap-1.5 mt-1.5 ml-0.5">
-                                                <span className="text-xs text-slate-500 font-medium">{vehicle.registrationNumber}</span>
-                                                <span className="text-[10px] text-slate-300">•</span>
-                                                <span className="text-xs text-slate-500 font-medium">{vehicle.capacity}</span>
+                                // Find active shipment for this driver
+                                const activeAssignment = assignedDriver ? shipments.find(s => {
+                                    const dId = s.driver?._id || s.driver;
+                                    return String(dId) === String(assignedDriver._id) &&
+                                        ['assigned', 'accepted', 'at_pickup', 'picked_up', 'in_transit', 'arrived'].includes(s.status);
+                                }) : null;
+
+                                return (
+                                    <div key={vehicle._id} className="grid grid-cols-12 gap-4 px-6 py-6 items-center hover:bg-slate-50/50 transition-colors group">
+
+                                        {/* Vehicle Profile */}
+                                        <div className="col-span-12 md:col-span-4 flex items-start gap-5">
+                                            <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
+                                                <Truck size={24} className="text-white" strokeWidth={1.5} />
+                                            </div>
+                                            <div className="flex flex-col pt-0.5">
+                                                <h3 className="font-display font-bold text-slate-800 text-lg leading-tight">
+                                                    {vehicle.name || `${vehicle.make} ${vehicle.model}`}
+                                                </h3>
+                                                <p className="font-medium text-slate-500 text-sm mt-0.5">{vehicle.type}</p>
+                                                <div className="flex items-center gap-1.5 mt-1.5 ml-0.5">
+                                                    <span className="text-xs text-slate-500 font-medium">{vehicle.registrationNumber}</span>
+                                                    <span className="text-[10px] text-slate-300">•</span>
+                                                    <span className="text-xs text-slate-500 font-medium">{vehicle.capacity}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Assigned Driver */}
-                                    <div className="col-span-6 md:col-span-3 flex items-center gap-3 pl-2">
-                                        {vehicle.assignedDriver ? (
-                                            <>
-                                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm bg-indigo-50 text-indigo-600 uppercase">
-                                                    {vehicle.assignedDriver.fullName?.charAt(0)}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <p className="font-bold text-slate-800 text-sm leading-tight">
-                                                        {vehicle.assignedDriver.fullName}
-                                                    </p>
-                                                    <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium mt-1">
-                                                        <Phone size={10} />
-                                                        {vehicle.assignedDriver.phone}
+                                        {/* Assigned Driver */}
+                                        <div className="col-span-6 md:col-span-3 flex items-center gap-3 pl-2">
+                                            {assignedDriver ? (
+                                                <>
+                                                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm bg-indigo-50 text-indigo-600 uppercase">
+                                                        {assignedDriver.fullName?.charAt(0)}
                                                     </div>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <span className="text-sm text-slate-400 italic">No Driver Assigned</span>
-                                        )}
-                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <p className="font-bold text-slate-800 text-sm leading-tight">
+                                                            {assignedDriver.fullName}
+                                                        </p>
+                                                        <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium mt-1">
+                                                            <Phone size={10} />
+                                                            {assignedDriver.phone}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <span className="text-sm text-slate-400 italic">No Driver Assigned</span>
+                                            )}
+                                        </div>
 
-                                    {/* Assignment (Placeholder field if not in API) */}
-                                    <div className="col-span-12 md:col-span-3 my-2 md:my-0">
-                                        {/* Assuming backend doesn't store 'assignment' string yet, or it's implicitly 'Free' */}
-                                        <div className="bg-slate-50/80 border border-slate-100 rounded-lg px-4 py-3 text-center">
-                                            <span className="text-sm text-slate-500 font-medium italic">
-                                                {vehicle.status === 'Available' ? 'Ready for Assignment' : 'Active Duty'}
+                                        {/* Assignment */}
+                                        <div className="col-span-12 md:col-span-3 my-2 md:my-0">
+                                            {activeAssignment ? (
+                                                <div className="bg-blue-50/80 border border-blue-100 rounded-lg px-4 py-3">
+                                                    <p className="text-xs font-bold text-blue-700 uppercase mb-1">{activeAssignment.status.replace('_', ' ')}</p>
+                                                    <p className="text-xs text-slate-600 truncate">
+                                                        To: {activeAssignment.distributor?.profile?.city || 'Distributor'}
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-slate-50/80 border border-slate-100 rounded-lg px-4 py-3 text-center">
+                                                    <span className="text-sm text-slate-500 font-medium italic">
+                                                        {(vehicle.status === 'Available' && !assignedDriver) ? 'Unassigned' : 'Ready'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Status */}
+                                        <div className="col-span-6 md:col-span-2 flex justify-end">
+                                            <span className={`px-4 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-sm uppercase tracking-wide ${getStatusColor(vehicle.status)}`}>
+                                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                                                {vehicle.status}
                                             </span>
                                         </div>
-                                    </div>
 
-                                    {/* Status */}
-                                    <div className="col-span-6 md:col-span-2 flex justify-end">
-                                        <span className={`px-4 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-sm uppercase tracking-wide ${getStatusColor(vehicle.status)}`}>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-                                            {vehicle.status}
-                                        </span>
                                     </div>
-
-                                </div>
-                            ))
+                                )
+                            })
                         ) : (
                             <div className="py-20 text-center flex flex-col items-center justify-center">
                                 <Truck size={32} className="text-slate-300 mb-4" />

@@ -25,7 +25,7 @@ const TransporterDashboard = () => {
     const isMobile = useMediaQuery('(max-width: 768px)');
     const user = authHelpers.getUser();
     const profile = user?.profile || {};
-    
+
     // Modals
     const [isAddVehicleModalOpen, setIsAddVehicleModalOpen] = useState(false);
     const [isAddShipmentModalOpen, setIsAddShipmentModalOpen] = useState(false);
@@ -54,9 +54,9 @@ const TransporterDashboard = () => {
         const completed = shipments.filter(s => s.status === 'Delivered').length;
         const active = shipments.filter(s => ['On Route', 'In Transit'].includes(s.status)).length;
         const fleetSize = vehicles.length;
-        
+
         // Mock Calculations for demo purposes
-        const estimatedDistance = completed * 150 + 12000; 
+        const estimatedDistance = completed * 150 + 12000;
         const calculatedEfficiency = 90 + (Math.random() * 5);
 
         setStats({
@@ -117,7 +117,7 @@ const TransporterDashboard = () => {
     };
 
     // Filter Logic
-    const filteredRecent = recentShipments.filter(s => 
+    const filteredRecent = recentShipments.filter(s =>
         (s.id?.toLowerCase() || '').includes(dashboardSearch.toLowerCase()) ||
         (s.origin?.toLowerCase() || '').includes(dashboardSearch.toLowerCase()) ||
         (s.destination?.toLowerCase() || '').includes(dashboardSearch.toLowerCase()) ||
@@ -138,7 +138,7 @@ const TransporterDashboard = () => {
     return (
         <DashboardLayout role="transporter">
             <div className={`space-y-6 ${isMobile ? 'pb-20' : ''}`}>
-                
+
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in">
                     <div>
@@ -146,29 +146,31 @@ const TransporterDashboard = () => {
                             <div className="p-2 bg-emerald-600 rounded-lg shadow-emerald-200 shadow-lg">
                                 <Truck className="text-white" size={24} />
                             </div>
-                            <h1 className="text-2xl font-display font-bold text-slate-800">
+                            <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">
                                 {profile.companyName || 'ABC Logistics'}
                             </h1>
                         </div>
-                        <p className="text-slate-500 ml-14">Real-time tracking and fleet management</p>
+                        <p className="text-sm md:text-base text-slate-500 ml-14">Real-time tracking and fleet management</p>
                     </div>
-                    
-                    <div className="flex gap-3 w-full md:w-auto">
-                        <Button 
-                            className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white flex-1 md:flex-none justify-center shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all duration-200 active:scale-95"
-                            icon={Plus}
-                            onClick={() => setIsAddVehicleModalOpen(true)} 
-                        >
-                            Add Vehicle
-                        </Button>
-                        <Button 
-                            className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white flex-1 md:flex-none justify-center shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all duration-200 active:scale-95"
-                            icon={Plus}
-                            onClick={() => setIsAddShipmentModalOpen(true)}
-                        >
-                            New Shipment
-                        </Button>
-                    </div>
+
+                    {!isMobile && (
+                        <div className="flex gap-3">
+                            <Button
+                                className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all duration-200 active:scale-95"
+                                icon={Plus}
+                                onClick={() => setIsAddVehicleModalOpen(true)}
+                            >
+                                Add Vehicle
+                            </Button>
+                            <Button
+                                className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all duration-200 active:scale-95"
+                                icon={Plus}
+                                onClick={() => setIsAddShipmentModalOpen(true)}
+                            >
+                                New Shipment
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Metrics Grid */}
@@ -182,37 +184,37 @@ const TransporterDashboard = () => {
                         </>
                     ) : (
                         <>
-                            <MetricCard 
-                                title="TOTAL FLEET SIZE" 
-                                value={stats.totalFleet} 
-                                icon={Truck} 
-                                color="emerald" 
-                                delay={0.1} 
+                            <MetricCard
+                                title="TOTAL FLEET SIZE"
+                                value={stats.totalFleet}
+                                icon={Truck}
+                                color="emerald"
+                                delay={0.1}
                             />
-                            <MetricCard 
-                                title="COMPLETED" 
-                                value={stats.completedShipments} 
-                                icon={CheckCircle2} 
-                                trend={15} 
-                                color="blue" 
-                                delay={0.2} 
+                            <MetricCard
+                                title="COMPLETED"
+                                value={stats.completedShipments}
+                                icon={CheckCircle2}
+                                trend={15}
+                                color="blue"
+                                delay={0.2}
                             />
-                            <MetricCard 
-                                title="TOTAL DISTANCE" 
-                                value={stats.totalDistance.toLocaleString()} 
-                                icon={Navigation} 
-                                trend={8} 
-                                color="amber" 
-                                delay={0.3} 
+                            <MetricCard
+                                title="TOTAL DISTANCE"
+                                value={stats.totalDistance.toLocaleString()}
+                                icon={Navigation}
+                                trend={8}
+                                color="amber"
+                                delay={0.3}
                             />
-                            <MetricCard 
-                                title="FLEET EFFICIENCY" 
-                                value={stats.efficiency} 
-                                unit="%" 
-                                icon={Activity} 
-                                trend={-1} 
-                                color="rose" 
-                                delay={0.4} 
+                            <MetricCard
+                                title="FLEET EFFICIENCY"
+                                value={stats.efficiency}
+                                unit="%"
+                                icon={Activity}
+                                trend={-1}
+                                color="rose"
+                                delay={0.4}
                             />
                         </>
                     )}
@@ -222,9 +224,9 @@ const TransporterDashboard = () => {
                 <div className={isMobile ? 'space-y-4' : 'grid grid-cols-1 lg:grid-cols-3 gap-6'}>
                     {/* Route Analytics (Area Chart) */}
                     <div className={isMobile ? 'space-y-4' : 'lg:col-span-2 space-y-6 animate-in'} style={{ animationDelay: '0.2s' }}>
-                        <ChartCardComponent 
-                            title="Route Analytics" 
-                            subtitle="Deliveries & Distance Covered" 
+                        <ChartCardComponent
+                            title="Route Analytics"
+                            subtitle="Deliveries & Distance Covered"
                             height={chartHeight}
                         >
                             <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -234,8 +236,8 @@ const TransporterDashboard = () => {
                                         <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <XAxis dataKey="name" {...chartTheme.axis} />
-                                <YAxis {...chartTheme.axis} />
+                                <XAxis dataKey="name" {...chartTheme.axis} tick={{ fontSize: isMobile ? 10 : 12 }} />
+                                <YAxis {...chartTheme.axis} tick={{ fontSize: isMobile ? 10 : 12 }} />
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                                 <Tooltip {...chartTheme.tooltip} />
                                 <Area
@@ -254,9 +256,9 @@ const TransporterDashboard = () => {
 
                     {/* Vehicle Utilization (Donut Chart) */}
                     <div className="animate-in" style={{ animationDelay: '0.3s' }}>
-                        <ChartCardComponent 
-                            title="Vehicle Utilization" 
-                            subtitle="Fleet status distribution" 
+                        <ChartCardComponent
+                            title="Vehicle Utilization"
+                            subtitle="Fleet status distribution"
                             height={isMobile ? 250 : 300}
                         >
                             <div className="relative flex justify-center items-center h-full">
@@ -277,7 +279,7 @@ const TransporterDashboard = () => {
                                     <Tooltip {...chartTheme.tooltip} />
                                 </PieChart>
                             </div>
-                            
+
                             <div className="flex justify-center gap-4 mt-2">
                                 {utilizationData.map(d => (
                                     <div key={d.name} className="flex items-center gap-2 text-xs text-slate-500">
@@ -292,16 +294,16 @@ const TransporterDashboard = () => {
 
                 {/* Recent Shipments Table with Search Toolbar */}
                 <div className="animate-in" style={{ animationDelay: '0.4s' }}>
-                    
+
                     <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
-                        <h2 className="text-xl font-display font-bold text-slate-800">Recent Shipments</h2>
+                        <h2 className="text-lg md:text-xl font-display font-bold text-slate-800">Recent Shipments</h2>
                     </div>
 
                     {/* Toolbar */}
                     <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-4 flex flex-col md:flex-row gap-4 justify-between items-center">
                         <div className="relative w-full md:w-96">
                             <Search className="absolute left-3 top-2.5 text-slate-400" size={20} />
-                            <input 
+                            <input
                                 type="text"
                                 placeholder="Search..."
                                 value={dashboardSearch}
@@ -309,7 +311,7 @@ const TransporterDashboard = () => {
                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                             />
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-800 transition-all shadow-sm">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-800 transition-all shadow-sm w-full md:w-auto justify-center">
                             <Filter size={18} />
                             Filter
                         </button>
@@ -325,14 +327,33 @@ const TransporterDashboard = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile FAB */}
+                {isMobile && (
+                    <div className="fixed bottom-20 right-4 z-40 flex flex-col gap-3 items-end">
+                        {/* Expandable Menu Logic could go here, for now simple stack or just primary action */}
+                        <button
+                            onClick={() => setIsAddShipmentModalOpen(true)}
+                            className="w-12 h-12 rounded-full bg-white text-emerald-600 shadow-lg border border-emerald-100 flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+                        >
+                            <Navigation size={20} />
+                        </button>
+                        <button
+                            onClick={() => setIsAddVehicleModalOpen(true)}
+                            className="w-14 h-14 rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+                        >
+                            <Plus size={28} />
+                        </button>
+                    </div>
+                )}
             </div>
 
-            <AddVehicleModal 
-                isOpen={isAddVehicleModalOpen} 
-                onClose={() => setIsAddVehicleModalOpen(false)} 
-                onAdd={handleAddVehicle} 
+            <AddVehicleModal
+                isOpen={isAddVehicleModalOpen}
+                onClose={() => setIsAddVehicleModalOpen(false)}
+                onAdd={handleAddVehicle}
             />
-            
+
             <AddShipmentModal
                 isOpen={isAddShipmentModalOpen}
                 onClose={() => setIsAddShipmentModalOpen(false)}

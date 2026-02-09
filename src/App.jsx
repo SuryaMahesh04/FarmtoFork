@@ -23,6 +23,7 @@ import TransporterDashboard from './pages/transporter/TransporterDashboard';
 import TransporterShipments from './pages/transporter/Shipments';
 import ShipmentRequests from './pages/transporter/ShipmentRequests';
 import TransporterDrivers from './pages/transporter/Drivers';
+import FleetMap from './pages/transporter/FleetMap';
 import TransporterRoutes from './pages/transporter/Routes';
 import TransporterVehicles from './pages/transporter/Vehicles';
 import TransporterAssistant from './pages/transporter/AssistantHelp';
@@ -83,6 +84,7 @@ function App() {
                     <Route path="/transporter" element={<TransporterDashboard />} />
                     <Route path="/transporter/requests" element={<ShipmentRequests />} />
                     <Route path="/transporter/vehicles" element={<TransporterVehicles />} />
+                    <Route path="/transporter/fleet-map" element={<FleetMap />} />
                     <Route path="/transporter/shipments" element={<TransporterShipments />} />
                     <Route path="/transporter/drivers" element={<TransporterDrivers />} />
                     <Route path="/transporter/routes" element={<TransporterRoutes />} />
