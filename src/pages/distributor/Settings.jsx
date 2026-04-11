@@ -3,12 +3,14 @@ import { User, Bell, Shield, Save, Warehouse } from 'lucide-react';
 import { api, authHelpers } from '../../utils/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
-
 import PlacesAutocomplete from '../../components/ui/PlacesAutocomplete';
+import LocationPickerModal from '../../components/ui/LocationPickerModal';
+import { MapPin } from 'lucide-react';
 
 const Settings = () => {
     const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(false);
+    const [isMapOpen, setIsMapOpen] = useState(false);
 
     const tabs = [
         { id: 'profile', label: 'Warehouse & Profile', icon: User },
@@ -123,7 +125,17 @@ const Settings = () => {
                     <div className="flex-1 bg-white p-6 rounded-xl shadow-sm border border-slate-100 min-h-[500px]">
                         {activeTab === 'profile' && (
                             <div className="space-y-6 animate-in fade-in">
-                                <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-100 pb-2">Warehouse & Profile Information</h2>
+                                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                    <h2 className="text-lg font-semibold text-slate-800">Warehouse & Profile Information</h2>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setIsMapOpen(true)}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-all shadow-sm"
+                                    >
+                                        <MapPin size={14} />
+                                        Pin on Map
+                                    </button>
+                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
@@ -328,6 +340,26 @@ const Settings = () => {
                     </div>
                 </div>
             </div>
+
+            <LocationPickerModal
+                isOpen={isMapOpen}
+                onClose={() => setIsMapOpen(false)}
+                onConfirm={(locData) => {
+                    const { coordinates, address } = locData;
+                    setFormData(prev => ({
+                        ...prev,
+                        address: {
+                            ...prev.address,
+                            formattedAddress: address.formattedAddress,
+                            city: address.city,
+                            state: address.state,
+                            coordinates: coordinates
+                        },
+                        warehouseAddress: address.formattedAddress
+                    }));
+                }}
+                initialLocation={formData.address?.coordinates}
+            />
         </DashboardLayout>
     );
 };

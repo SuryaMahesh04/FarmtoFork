@@ -19,7 +19,7 @@ const Shipments = () => {
     const fetchShipments = async () => {
         try {
             setLoading(true);
-            const minLoadTime = 3400;
+            const minLoadTime = 1000;
             const [response] = await Promise.all([
                 api.shipment.getAll(),
                 new Promise(resolve => setTimeout(resolve, minLoadTime))
@@ -87,7 +87,11 @@ const Shipments = () => {
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-500">Quantity:</span>
-                                        <span className="font-medium text-slate-700">{shipment.batch?.quantity} kg</span>
+                                        <span className="font-medium text-slate-700">
+                                            {typeof shipment.batch?.quantity === 'object' 
+                                                ? 'Decryption Error' 
+                                                : shipment.batch?.quantity} kg
+                                        </span>
                                     </div>
                                     <div className="border-t border-slate-100 my-2"></div>
                                     <div className="flex items-start gap-2 text-sm text-slate-600">

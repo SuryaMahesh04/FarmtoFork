@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { User, MapPin, Sprout, FileText, CheckCircle, Lock } from 'lucide-react';
+import { User, MapPin, Sprout, FileText, CheckCircle, Lock, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StepWizard from '../StepWizard';
 import FormInput from '../../ui/FormInput';
@@ -9,6 +9,7 @@ import Select from '../../ui/Select';
 import Button from '../../ui/Button';
 import { indiaStates, cropTypes, landTypes } from '../../../data/indiaGeoData';
 import { api, authHelpers } from '../../../utils/api';
+import LocationPickerModal from '../../ui/LocationPickerModal';
 
 const FarmerOnboarding = () => {
     const navigate = useNavigate();
@@ -17,7 +18,25 @@ const FarmerOnboarding = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [isManualVillage, setIsManualVillage] = useState(false);
+    const [certificateFile, setCertificateFile] = useState(null);
+    const [isMapOpen, setIsMapOpen] = useState(false);
     const { register, handleSubmit, formState: { errors }, trigger, watch, setValue } = useForm({ mode: 'onChange' });
+
+    const onLocationConfirm = (locationData) => {
+        const { coordinates, address } = locationData;
+        if (address) {
+            setValue('state', address.state);
+            setValue('district', address.city); // Map city to district for farmer
+            setValue('village', address.city); // Map city to village for farmer
+            
+            // Store coordinates for profile update
+            setFormData(prev => ({ 
+                ...prev, 
+                coordinates: coordinates,
+                addressObject: address 
+            }));
+        }
+    };
 
     const selectedState = watch('state');
     const selectedDistrict = watch('district');
@@ -26,7 +45,6 @@ const FarmerOnboarding = () => {
         { title: 'Account Setup', icon: Lock },
         { title: 'Personal Details', icon: User },
         { title: 'Farm Details', icon: Sprout },
-        { title: 'KYC & Bank', icon: FileText },
         { title: 'Review', icon: CheckCircle },
     ];
 
@@ -59,6 +77,17 @@ const FarmerOnboarding = () => {
                 authHelpers.saveToken(registerResponse.data.token);
                 authHelpers.saveUser(registerResponse.data.user);
 
+                // Handle organic certificate upload if selected
+                let organicCertificateUrl = '';
+                if (data.organicCertified === 'yes' && certificateFile) {
+                    const formData = new FormData();
+                    formData.append('document', certificateFile);
+                    const uploadRes = await api.auth.uploadFile(formData);
+                    if (uploadRes.success) {
+                        organicCertificateUrl = uploadRes.data.url;
+                    }
+                }
+
                 // Then, update profile with remaining onboarding data
                 await api.auth.updateProfile({
                     fullName: data.fullName,
@@ -70,9 +99,13 @@ const FarmerOnboarding = () => {
                     landType: data.landType,
                     primaryCrop: data.primaryCrop,
                     organicCertified: data.organicCertified === 'yes',
-                    aadhaarNumber: data.aadhaar,
-                    bankAccount: data.bankAccount,
-                    ifscCode: data.ifsc
+                    organicCertificateUrl,
+                    address: {
+                        formattedAddress: formData.addressObject?.formattedAddress || `${data.village}, ${data.district}, ${data.state}`,
+                        city: data.district,
+                        state: data.state,
+                        coordinates: formData.coordinates || null
+                    }
                 });
 
                 // Navigate to farmer dashboard
@@ -124,7 +157,17 @@ const FarmerOnboarding = () => {
             case 1:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
-                        <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Tell us about yourself</h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-display font-semibold text-slate-700">Tell us about yourself</h2>
+                            <button 
+                                type="button"
+                                onClick={() => setIsMapOpen(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-sage-600 bg-sage-50 border border-sage-100 hover:bg-sage-100 transition-all shadow-sm"
+                            >
+                                <MapPin size={14} />
+                                Choose from Map
+                            </button>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormInput label="Full Name" name="fullName" register={register} required="Name is required" error={errors.fullName} icon={User} />
                             <FormInput label="Mobile Number" name="mobile" type="tel" register={register} required="Mobile is required" error={errors.mobile} placeholder="+91 98765 43210" />
@@ -194,25 +237,42 @@ const FarmerOnboarding = () => {
                                     <span className="text-sm text-slate-600">No / In Process</span>
                                 </label>
                             </div>
+
+                            {/* Conditional Upload Field */}
+                            {watch('organicCertified') === 'yes' && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 pt-4 border-t border-sage-200">
+                                    <p className="text-sm font-medium text-slate-700 mb-2">Upload Certificate</p>
+                                    <div className="relative border-2 border-dashed border-sage-300 rounded-xl p-4 text-center hover:bg-sage-50 transition-colors">
+                                        <input 
+                                            type="file" 
+                                            accept=".pdf,.jpg,.jpeg,.png,.docx" 
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            onChange={(e) => setCertificateFile(e.target.files[0])}
+                                        />
+                                        <div className="flex flex-col items-center gap-2 pointer-events-none relative z-0">
+                                            {certificateFile ? (
+                                                <>
+                                                    <FileText className="text-emerald-500" size={24} />
+                                                    <span className="text-sm font-medium text-slate-700 truncate max-w-full px-2">{certificateFile.name}</span>
+                                                    <span className="text-xs text-slate-500">Click to change file</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="p-2 bg-sage-100 rounded-full text-sage-600">
+                                                        <Plus size={20} />
+                                                    </div>
+                                                    <span className="text-sm text-slate-600">Click or drag certificate</span>
+                                                    <span className="text-xs text-slate-400">PDF, JPG, PNG, DOCX (Max 5MB)</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
                         </div>
                     </motion.div>
                 );
             case 3:
-                return (
-                    <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
-                        <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">KYC & Documents</h2>
-                        <FormInput label="Aadhaar Number" name="aadhaar" register={register} required="Aadhaar is required" error={errors.aadhaar} placeholder="XXXX XXXX XXXX" />
-                        <FormInput label="Bank Account Number" name="bankAccount" register={register} required="Bank Account is required" error={errors.bankAccount} />
-                        <FormInput label="IFSC Code" name="ifsc" register={register} required="IFSC is required" error={errors.ifsc} />
-
-                        <div className="p-4 border-2 border-dashed border-sage-200 rounded-xl bg-sage-50/50 text-center hover:bg-sage-50 transition-colors cursor-pointer">
-                            <div className="text-sage-400 mb-2 mx-auto"><FileText size={32} className="mx-auto" /></div>
-                            <p className="text-sm font-medium text-sage-700">Upload Land Document / Pattadar Passbook</p>
-                            <p className="text-xs text-slate-400 mt-1">PDF or JPG (Max 5MB)</p>
-                        </div>
-                    </motion.div>
-                );
-            case 4:
                 const data = watch();
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-6">
@@ -225,7 +285,6 @@ const FarmerOnboarding = () => {
                             <div className="h-px bg-sage-200/50 my-2"></div>
                             <ReviewRow label="Land Size" value={`${data.landSize} Acres`} />
                             <ReviewRow label="Primary Crop" value={cropTypes.find(c => c.value === data.primaryCrop)?.label} />
-                            <ReviewRow label="Aadhaar" value={data.aadhaar} />
                         </div>
                         <p className="text-xs text-slate-500 text-center">By submitting, you agree to our Terms of Service and Privacy Policy.</p>
                     </motion.div>
@@ -280,6 +339,12 @@ const FarmerOnboarding = () => {
                     </form>
                 </div>
             </div>
+
+            <LocationPickerModal
+                isOpen={isMapOpen}
+                onClose={() => setIsMapOpen(false)}
+                onConfirm={onLocationConfirm}
+            />
         </div>
     );
 };

@@ -27,6 +27,8 @@ const LeafletMap = ({ origin, destination, originLabel, destinationLabel, onDist
     const [coords, setCoords] = useState({ origin: null, destination: null });
     const [isValid, setIsValid] = useState(false);
     const [calculatedDistance, setCalculatedDistance] = useState(null);
+    const [routePoints, setRoutePoints] = useState([]);
+    const [isRouting, setIsRouting] = useState(false);
 
     // Geocode helper
     const geocode = async (query) => {
@@ -61,12 +63,46 @@ const LeafletMap = ({ origin, destination, originLabel, destinationLabel, onDist
 
             if (originCoords && destCoords) {
                 setIsValid(true);
-                const dist = calculateDistance(originCoords.lat, originCoords.lng, destCoords.lat, destCoords.lng);
-                setCalculatedDistance(dist);
-                if (onDistanceCalculated) onDistanceCalculated(dist);
+                fetchRoute(originCoords, destCoords);
             } else if (originCoords) {
                 // Single point logic if needed
                 setIsValid(true);
+            }
+        };
+
+        const fetchRoute = async (start, end) => {
+            try {
+                setIsRouting(true);
+                // Use OSRM public API for driving route
+                const response = await fetch(
+                    `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`
+                );
+                const data = await response.json();
+
+                if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    // Convert GeoJSON coordinates [lng, lat] to Leaflet [lat, lng]
+                    const points = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                    setRoutePoints(points);
+
+                    // Update distance (OSRM distance is in meters, convert to km)
+                    const roadDist = (route.distance / 1000).toFixed(1);
+                    setCalculatedDistance(roadDist);
+                    if (onDistanceCalculated) onDistanceCalculated(roadDist);
+                } else {
+                    // Fallback to straight line if routing fails
+                    console.warn('OSRM routing failed, falling back to straight line');
+                    setRoutePoints([[start.lat, start.lng], [end.lat, end.lng]]);
+                    const haversineDist = calculateDistance(start.lat, start.lng, end.lat, end.lng);
+                    setCalculatedDistance(haversineDist);
+                    if (onDistanceCalculated) onDistanceCalculated(haversineDist);
+                }
+            } catch (error) {
+                console.error('Routing error:', error);
+                // Fallback
+                setRoutePoints([[start.lat, start.lng], [end.lat, end.lng]]);
+            } finally {
+                setIsRouting(false);
             }
         };
 
@@ -125,13 +161,12 @@ const LeafletMap = ({ origin, destination, originLabel, destinationLabel, onDist
                     </Marker>
                 ))}
 
-                {coords.origin && coords.destination && (
+                {routePoints.length > 0 && (
                     <Polyline
-                        positions={[
-                            [coords.origin.lat, coords.origin.lng],
-                            [coords.destination.lat, coords.destination.lng]
-                        ]}
-                        color="blue"
+                        positions={routePoints}
+                        color="#3b82f6" // Nice blue color
+                        weight={4}
+                        opacity={0.8}
                     />
                 )}
 

@@ -3,6 +3,35 @@ const Batch = require('../models/Batch');
 const User = require('../models/User');
 const Driver = require('../models/Driver');
 const Notification = require('../models/Notification');
+const { decrypt } = require('../utils/cryptoEngine');
+
+/**
+ * Helper to decrypt batch specific fields for API response
+ */
+const decryptBatchData = (batch) => {
+    if (!batch) return null;
+    try {
+        const decryptedBatch = batch.toObject ? batch.toObject() : { ...batch };
+        
+        if (decryptedBatch.quantity && typeof decryptedBatch.quantity === 'object') {
+            decryptedBatch.quantity = decrypt(decryptedBatch.quantity);
+        }
+        if (decryptedBatch.pricePerUnit && typeof decryptedBatch.pricePerUnit === 'object') {
+            decryptedBatch.pricePerUnit = decrypt(decryptedBatch.pricePerUnit);
+        }
+        if (decryptedBatch.location?.gpsCoordinates && typeof decryptedBatch.location.gpsCoordinates === 'object') {
+            decryptedBatch.location.gpsCoordinates = decrypt(decryptedBatch.location.gpsCoordinates);
+        }
+        if (decryptedBatch.notes && typeof decryptedBatch.notes === 'object') {
+            decryptedBatch.notes = decrypt(decryptedBatch.notes);
+        }
+        
+        return decryptedBatch;
+    } catch (err) {
+        console.error('Decryption error on batch:', err);
+        return batch;
+    }
+};
 
 exports.createShipment = async (req, res) => {
     try {
@@ -88,15 +117,23 @@ exports.getShipments = async (req, res) => {
 
         const shipments = await Shipment.find(query)
             .populate('farmer', 'profile.fullName profile.address profile.village profile.district profile.city profile.state')
-            .populate('batch', 'batchId crop variety quantity unit')
+            .populate('batch')
             .populate('distributor', 'profile.companyName profile.fullName profile.address profile.city profile.state')
             .populate('transporter', 'profile.companyName profile.fullName profile.address profile.city profile.state')
             .populate('driver', 'profile.fullName profile.mobile')
             .sort({ createdAt: -1 });
 
+        const decryptedShipments = shipments.map(shipment => {
+            const shpObj = shipment.toObject();
+            if (shpObj.batch) {
+                shpObj.batch = decryptBatchData(shpObj.batch);
+            }
+            return shpObj;
+        });
+
         res.json({
             success: true,
-            data: shipments
+            data: decryptedShipments
         });
     } catch (error) {
         console.error('Get shipments error:', error);
@@ -120,9 +157,14 @@ exports.getShipmentById = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Shipment not found' });
         }
 
+        const shpObj = shipment.toObject();
+        if (shpObj.batch) {
+            shpObj.batch = decryptBatchData(shpObj.batch);
+        }
+
         res.json({
             success: true,
-            data: shipment
+            data: shpObj
         });
     } catch (error) {
         console.error('Get shipment details error:', error);
@@ -166,6 +208,20 @@ exports.assignDriver = async (req, res) => {
         });
 
         await shipment.save();
+
+        // Sync with Batch Journey
+        await Batch.findByIdAndUpdate(shipment.batch, {
+            $push: {
+                journey: {
+                    stage: 'assigned',
+                    location: 'System Update',
+                    actorId: transporterId,
+                    actorRole: 'transporter',
+                    details: `Driver ${driverDoc.fullName} assigned to shipment ${shipment.shipmentId}`,
+                    timestamp: new Date()
+                }
+            }
+        });
 
         // Notify Driver
         await Notification.create({
@@ -273,6 +329,70 @@ exports.updateShipmentStatus = async (req, res) => {
         });
 
         await shipment.save();
+
+        // Notify Relevant Parties about Status Change
+        try {
+            const notifications = [];
+            const shipmentId = shipment.shipmentId;
+
+            // Farmer wants to know when accepted, picked up, or delivered
+            if (['accepted', 'picked_up', 'delivered', 'rejected'].includes(status)) {
+                notifications.push({
+                    recipient: shipment.farmer._id || shipment.farmer,
+                    message: `Shipment ${shipmentId} is now ${status.replace('_', ' ')}`
+                });
+            }
+
+            // Distributor wants to know when picked up, in-transit, or delivered
+            if (['picked_up', 'in-transit', 'delivered'].includes(status)) {
+                notifications.push({
+                    recipient: shipment.distributor._id || shipment.distributor,
+                    message: `Incoming shipment ${shipmentId} is now ${status.replace('_', ' ')}`
+                });
+            }
+
+            // Transporter wants to know if distributor completed/delivered
+            if (['delivered', 'completed'].includes(status) && isDistributor) {
+                notifications.push({
+                    recipient: shipment.transporter._id || shipment.transporter,
+                    message: `Shipment ${shipmentId} has been received by distributor`
+                });
+            }
+
+            for (const n of notifications) {
+                // Don't notify the person who performed the action
+                if (n.recipient.toString() !== userId) {
+                    await Notification.create({
+                        recipient: n.recipient,
+                        sender: userId,
+                        type: 'shipment_update',
+                        message: n.message,
+                        relatedId: shipment._id,
+                        relatedModel: 'Shipment'
+                    });
+                }
+            }
+        } catch (nErr) {
+            console.error('Shipment status notification error:', nErr);
+        }
+
+        // Sync with Batch Journey
+        try {
+            await Batch.findByIdAndUpdate(shipment.batch._id || shipment.batch, {
+                $push: {
+                    journey: {
+                        stage: status,
+                        location: updateLocation,
+                        actorId: userId,
+                        actorRole: req.user.role || 'system',
+                        details: updateNotes,
+                        timestamp: new Date()
+                    }
+                }
+            });
+        } catch (bErr) {
+            console.error('Failed to update batch journey:', bErr);
+        }
 
         // Update Vehicle Status if driver is assigned
         if (shipment.driver) {

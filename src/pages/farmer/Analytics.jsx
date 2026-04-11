@@ -25,7 +25,7 @@ const Analytics = () => {
     const fetchAnalytics = async () => {
         try {
             setLoading(true);
-            const minLoadTime = 3400;
+            const minLoadTime = 1000;
             const [res] = await Promise.all([
                 api.farmer.getAnalytics(),
                 new Promise(resolve => setTimeout(resolve, minLoadTime))

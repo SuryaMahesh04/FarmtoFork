@@ -1,5 +1,40 @@
 const Batch = require('../models/Batch');
 const { generateBatchHash, generateJourneyHash } = require('../utils/hashGenerator');
+const cryptoEngine = require('../utils/cryptoEngine');
+
+// Helper to decrypt and verify
+const decryptBatch = (batchDoc) => {
+    const b = typeof batchDoc.toObject === 'function' ? batchDoc.toObject() : batchDoc;
+    if (b.isEncrypted) {
+        let quantityCipher = undefined;
+        if (b.quantity && b.quantity.ciphertext) {
+            quantityCipher = b.quantity.ciphertext;
+            b.quantity = Number(cryptoEngine.decrypt(b.quantity)) || 0;
+        }
+        if (b.pricePerUnit && b.pricePerUnit.ciphertext) {
+            b.pricePerUnit = Number(cryptoEngine.decrypt(b.pricePerUnit)) || 0;
+        }
+        if (b.notes && b.notes.ciphertext) {
+            b.notes = cryptoEngine.decrypt(b.notes);
+        }
+        
+        // Verify signature
+        const farmerIdStr = typeof b.farmerId === 'object' && b.farmerId !== null 
+            ? String(b.farmerId._id) 
+            : String(b.farmerId);
+            
+        const payloadToSign = {
+            batchId: b.batchId,
+            farmerId: farmerIdStr,
+            crop: b.crop,
+            quantityCipher: quantityCipher,
+            previousRecordHash: b.previousRecordHash,
+            timestamp: b.hashTimestamp ? new Date(b.hashTimestamp).getTime() : 0
+        };
+        b.isTampered = !cryptoEngine.verifySignature(payloadToSign, b.documentSignature);
+    }
+    return b;
+};
 
 // Get all batches for the logged-in farmer
 exports.getBatches = async (req, res) => {
@@ -16,10 +51,11 @@ exports.getBatches = async (req, res) => {
             .select('-__v');
 
         const count = await Batch.countDocuments(query);
+        const decryptedBatches = batches.map(decryptBatch);
 
         res.json({
             success: true,
-            data: batches,
+            data: decryptedBatches,
             pagination: {
                 page: Number(page),
                 limit: Number(limit),
@@ -45,7 +81,9 @@ exports.getBatchById = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Batch not found' });
         }
 
-        res.json({ success: true, data: batch });
+        const decryptedBatch = decryptBatch(batch);
+
+        res.json({ success: true, data: decryptedBatch });
     } catch (error) {
         console.error('Get batch error:', error);
         res.status(500).json({ success: false, message: error.message });
@@ -71,17 +109,27 @@ exports.createBatch = async (req, res) => {
         // Generate unique batch ID
         const batchCount = await Batch.countDocuments();
         const batchId = `${String(batchCount + 1).padStart(6, '0')}`;
+        
+        // Find previous record to link the hash chain
+        const lastBatch = await Batch.findOne().sort({ createdAt: -1 });
+        const previousRecordHash = lastBatch ? (lastBatch.documentSignature || lastBatch.blockchainHash || '0') : '0';
+
+        // Encrypt sensitive data
+        const encryptedQuantity = cryptoEngine.encrypt(quantity);
+        const encryptedPrice = pricePerUnit ? cryptoEngine.encrypt(pricePerUnit) : undefined;
+        const encryptedNotes = notes ? cryptoEngine.encrypt(notes) : undefined;
 
         // Prepare batch data
         const batchData = {
             batchId,
             farmerId: req.user._id,
             crop,
+            cropHash: cryptoEngine.generateBlindIndex(crop),
             variety,
-            quantity,
+            quantity: encryptedQuantity,
             unit: unit || 'kg',
             harvestDate,
-            pricePerUnit,
+            pricePerUnit: encryptedPrice,
             totalRevenue: pricePerUnit ? pricePerUnit * quantity : 0,
             qualityScore: qualityScore || 85,
             organicCertified: organicCertified || false,
@@ -91,14 +139,30 @@ exports.createBatch = async (req, res) => {
                 district: req.user.profile.district,
                 state: req.user.profile.state
             },
-            notes,
-            status: 'active'
+            notes: encryptedNotes,
+            status: 'active',
+            isEncrypted: true,
+            qrGenerated: true,
+            previousRecordHash
         };
 
-        // Generate blockchain hash
-        const blockchainHash = generateBatchHash(batchData);
-        batchData.blockchainHash = blockchainHash;
-        batchData.hashTimestamp = new Date();
+        const hashTimestamp = new Date();
+        batchData.hashTimestamp = hashTimestamp;
+
+        // Sign the core payload
+        const payloadToSign = {
+            batchId: batchData.batchId,
+            farmerId: String(batchData.farmerId),
+            crop: batchData.crop,
+            quantityCipher: encryptedQuantity.ciphertext,
+            previousRecordHash: batchData.previousRecordHash,
+            timestamp: hashTimestamp.getTime()
+        };
+        batchData.documentSignature = cryptoEngine.signPayload(payloadToSign);
+        
+        // Generate legacy blockchain hash for backward compatibility tracking
+        const blockchainPayload = { ...batchData, quantity }; // Send plaintext for hashing just for legacy
+        batchData.blockchainHash = generateBatchHash(blockchainPayload);
 
         // Create batch
         const batch = new Batch(batchData);
@@ -129,8 +193,9 @@ exports.createBatch = async (req, res) => {
                 batchId: batch.batchId,
                 _id: batch._id,
                 blockchainHash: batch.blockchainHash,
+                documentSignature: batch.documentSignature,
                 crop: batch.crop,
-                quantity: batch.quantity
+                quantity: quantity // Return plaintext for UI immediate use
             }
         });
     } catch (error) {
@@ -151,7 +216,6 @@ exports.updateBatch = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Batch not found' });
         }
 
-        // Only allow updates if batch is still active
         if (batch.status !== 'active') {
             return res.status(400).json({
                 success: false,
@@ -161,21 +225,34 @@ exports.updateBatch = async (req, res) => {
 
         const { pricePerUnit, qualityScore, notes, status, qrGenerated } = req.body;
 
+        // If price changes, we update the encrypted payload and total revenue
         if (pricePerUnit !== undefined) {
-            batch.pricePerUnit = pricePerUnit;
-            batch.totalRevenue = pricePerUnit * batch.quantity;
+            batch.pricePerUnit = cryptoEngine.encrypt(pricePerUnit);
+            
+            // Need original quantity to calculate revenue
+            let originalQuantity = 0;
+            if (batch.quantity && batch.quantity.ciphertext) {
+                originalQuantity = Number(cryptoEngine.decrypt(batch.quantity)) || 0;
+            } else {
+                originalQuantity = Number(batch.quantity) || 0; // fallback if not encrypted
+            }
+            batch.totalRevenue = pricePerUnit * originalQuantity;
         }
+        
         if (qualityScore !== undefined) batch.qualityScore = qualityScore;
-        if (notes !== undefined) batch.notes = notes;
+        if (notes !== undefined) batch.notes = cryptoEngine.encrypt(notes);
         if (status !== undefined) batch.status = status;
         if (qrGenerated !== undefined) batch.qrGenerated = qrGenerated;
+
+        // Re-sign if core fields changed? Currently we don't allow modifying quantity/crop to maintain chain integrity.
+        // If we allowed it, we'd have to regenerate the signature, which might break chains if strictly linked.
 
         await batch.save();
 
         res.json({
             success: true,
             message: 'Batch updated successfully',
-            data: batch
+            data: decryptBatch(batch)
         });
     } catch (error) {
         console.error('Update batch error:', error);
@@ -195,7 +272,6 @@ exports.deleteBatch = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Batch not found' });
         }
 
-        // Only allow deletion if batch is still active and has no journey beyond creation
         if (batch.status !== 'active' || batch.journey.length > 1) {
             return res.status(400).json({
                 success: false,
@@ -218,61 +294,96 @@ exports.deleteBatch = async (req, res) => {
 // Get dashboard analytics
 exports.getAnalytics = async (req, res) => {
     try {
-        const farmerId = req.user._id;
+        const farmerId = req.user.id || req.user._id;
+        
+        // Month names for mapping
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         // Get all batches for this farmer
-        const batches = await Batch.find({ farmerId });
+        const rawBatches = await Batch.find({ farmerId });
+        const batches = rawBatches.map(decryptBatch);
 
-        // Calculate metrics
+        // Get all shipments for this farmer
+        const Shipment = require('../models/Shipment');
+        const shipments = await Shipment.find({ farmer: farmerId });
+
+        // Calculate basic metrics
         const totalBatches = batches.length;
-        const activeBatches = batches.filter(b => b.status === 'active').length;
-        const totalRevenue = batches.reduce((sum, b) => sum + (b.totalRevenue || 0), 0);
-        const avgQualityScore = batches.length > 0
-            ? batches.reduce((sum, b) => sum + b.qualityScore, 0) / batches.length
-            : 0;
+        const totalShipments = shipments.length;
+        const activeShipments = shipments.filter(s => s.status !== 'delivered' && s.status !== 'rejected').length;
+        const totalRevenue = batches.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
+        
+        // Integrity Score (Percentage of verified batches)
+        const tamperedCount = batches.filter(b => b.isTampered).length;
+        const integrityScore = totalBatches > 0 
+            ? Math.floor(((totalBatches - tamperedCount) / totalBatches) * 100) 
+            : 100;
 
-        // Crop distribution
+        // Shared aggregation containers
+        const harvestVolumeTrend = {};
+        const revenueTrend = {};
         const cropDistribution = {};
+        const qualityRanges = { '90+': 0, '80-89': 0, '70-79': 0, '<70': 0 };
+        const integrityStatus = { verified: 0, tampered: 0 };
+
         batches.forEach(b => {
-            cropDistribution[b.crop] = (cropDistribution[b.crop] || 0) + b.quantity;
-        });
+            const date = b.harvestDate ? new Date(b.harvestDate) : new Date(b.createdAt);
+            const mIdx = date.getMonth();
+            const mName = months[mIdx];
+            const qty = Number(b.quantity) || 0;
+            
+            // 1. Harvest & Revenue Volume (Monthly Trends)
+            harvestVolumeTrend[mName] = (harvestVolumeTrend[mName] || 0) + qty;
+            revenueTrend[mName] = (revenueTrend[mName] || 0) + (Number(b.totalRevenue) || 0);
 
-        const cropDistributionData = Object.entries(cropDistribution).map(([crop, quantity]) => ({
-            name: crop,
-            value: quantity
-        }));
-
-        // Seasonal trends (last 6 months)
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-        const recentBatches = batches.filter(b => new Date(b.harvestDate) >= sixMonthsAgo);
-
-        // Group by month
-        const monthlyData = {};
-        recentBatches.forEach(batch => {
-            const month = new Date(batch.harvestDate).toLocaleString('default', { month: 'short' });
-            if (!monthlyData[month]) {
-                monthlyData[month] = { batches: 0, revenue: 0 };
+            // 2. Crop Distribution (All active inventory)
+            if (['active', 'in-transit', 'assigned'].includes(b.status || 'active')) {
+                const cropName = b.crop || 'Unknown';
+                cropDistribution[cropName] = (cropDistribution[cropName] || 0) + qty;
             }
-            monthlyData[month].batches += 1;
-            monthlyData[month].revenue += batch.totalRevenue || 0;
+
+            // 3. Quality Analysis
+            const score = Number(b.qualityScore) || 0;
+            if (score >= 90) qualityRanges['90+']++;
+            else if (score >= 80) qualityRanges['80-89']++;
+            else if (score >= 70) qualityRanges['70-79']++;
+            else qualityRanges['<70']++;
+
+            // 4. Integrity Status
+            if (b.isTampered) integrityStatus.tampered++;
+            else integrityStatus.verified++;
         });
 
-        const seasonalTrendData = Object.entries(monthlyData).map(([month, data]) => ({
-            name: month,
-            batches: data.batches,
-            revenue: data.revenue
+        // Format chart data for the last 6 months
+        const currentMonthIdx = new Date().getMonth();
+        const last6MonthNames = [];
+        for (let i = 5; i >= 0; i--) {
+            last6MonthNames.push(months[(currentMonthIdx - i + 12) % 12]);
+        }
+
+        const harvestVolumeData = last6MonthNames.map(m => ({
+            name: m,
+            value: Math.round(harvestVolumeTrend[m] || 0)
         }));
 
-        // Market price data (simulated for now - can be replaced with real market data)
-        const marketPriceData = [
-            { month: 'Jan', myPrice: 2800, marketPrice: 2650 },
-            { month: 'Feb', myPrice: 2900, marketPrice: 2700 },
-            { month: 'Mar', myPrice: 3100, marketPrice: 2850 },
-            { month: 'Apr', myPrice: 3200, marketPrice: 2900 },
-            { month: 'May', myPrice: 3300, marketPrice: 3000 },
-            { month: 'Jun', myPrice: 3400, marketPrice: 3100 }
+        const revenueTrendData = last6MonthNames.map(m => ({
+            name: m,
+            revenue: Math.round(revenueTrend[m] || 0)
+        }));
+
+        const cropDistributionData = Object.entries(cropDistribution).map(([name, value]) => ({
+            name,
+            value: Math.round(value)
+        }));
+
+        const qualityDistributionData = Object.entries(qualityRanges).map(([name, value]) => ({
+            name,
+            value
+        }));
+
+        const integrityData = [
+            { name: 'Verified', value: integrityStatus.verified },
+            { name: 'Tampered', value: integrityStatus.tampered }
         ];
 
         res.json({
@@ -280,29 +391,16 @@ exports.getAnalytics = async (req, res) => {
             data: {
                 metrics: {
                     totalBatches,
-                    activeBatches,
-                    totalRevenue,
-                    qualityScore: Math.round(avgQualityScore)
+                    totalShipments,
+                    activeShipments,
+                    totalRevenue: Math.round(totalRevenue),
+                    integrityScore: integrityScore
                 },
                 cropDistribution: cropDistributionData,
-                seasonalTrends: seasonalTrendData,
-                marketPrices: marketPriceData,
-                resourceUsage: [
-                    { month: 'Jan', water: 450, fertilizer: 120, labor: 240 },
-                    { month: 'Feb', water: 520, fertilizer: 140, labor: 260 },
-                    { month: 'Mar', water: 480, fertilizer: 130, labor: 250 },
-                    { month: 'Apr', water: 600, fertilizer: 180, labor: 300 },
-                    { month: 'May', water: 550, fertilizer: 160, labor: 280 },
-                    { month: 'Jun', water: 580, fertilizer: 170, labor: 290 }
-                ],
-                soilHealth: [
-                    { subject: 'Nitrogen (N)', A: 85, B: 120, fullMark: 150 },
-                    { subject: 'Phosphorus (P)', A: 90, B: 110, fullMark: 150 },
-                    { subject: 'Potassium (K)', A: 130, B: 130, fullMark: 150 },
-                    { subject: 'pH Level', A: 80, B: 100, fullMark: 150 },
-                    { subject: 'Moisture', A: 65, B: 90, fullMark: 150 },
-                    { subject: 'Organic C', A: 70, B: 85, fullMark: 150 }
-                ]
+                harvestVolume: harvestVolumeData,
+                revenueTrend: revenueTrendData,
+                qualityDistribution: qualityDistributionData,
+                integrityStatus: integrityData
             }
         });
     } catch (error) {

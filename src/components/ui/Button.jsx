@@ -8,11 +8,13 @@ const Button = ({
     size = 'md',
     icon: Icon,
     isLoading = false,
+    loading = false, // Support both prop names to avoid leakage
     onClick,
     className = '',
     type = 'button',
     ...props
 }) => {
+    const activeLoading = isLoading || loading;
 
     const variants = {
         primary: "bg-sage-500 hover:bg-sage-600 text-white shadow-md hover:shadow-lg ring-sage-200",
@@ -39,12 +41,12 @@ const Button = ({
         ${sizes[size]} 
         ${className}
       `}
-            onClick={!isLoading ? onClick : undefined}
-            disabled={isLoading || props.disabled}
+            onClick={!activeLoading ? onClick : undefined}
+            disabled={activeLoading || props.disabled}
             {...props}
         >
-            {isLoading && <Loader2 className="animate-spin w-4 h-4" />}
-            {!isLoading && Icon && <Icon className="w-4 h-4" />}
+            {activeLoading && <Loader2 className="animate-spin w-4 h-4" />}
+            {!activeLoading && Icon && <Icon className="w-4 h-4" />}
             {children}
         </motion.button>
     );

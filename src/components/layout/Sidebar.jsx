@@ -2,6 +2,9 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { authHelpers } from '../../utils/api';
 import {
+    ShoppingBag,
+    ClipboardList,
+    Mail,
     LayoutDashboard,
     Package,
     Truck,
@@ -16,7 +19,8 @@ import {
     X,
     MapPin,
     User,
-    MessageSquareText
+    MessageSquareText,
+    Search
 } from 'lucide-react';
 import logo from '../../assets/logo2.png';
 
@@ -46,6 +50,7 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: Truck, label: 'Shipments', path: '/farmer/shipments' },
                     { icon: QrCode, label: 'Generate QR', path: '/farmer/scan' },
                     { icon: BarChart3, label: 'Analytics', path: '/farmer/analytics' },
+                    { icon: MapPin, label: 'Ecosystem Map', path: '/farmer/map' },
                     ...common
                 ];
             case 'transporter':
@@ -56,6 +61,7 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: FileText, label: 'Shipment Requests', path: '/transporter/requests' },
                     { icon: Users, label: 'Drivers', path: '/transporter/drivers' },
                     { icon: Truck, label: 'Fleet Map', path: '/transporter/fleet-map' },
+                    { icon: MapPin, label: 'Network Map', path: '/transporter/map' },
                     ...common
                 ];
             case 'distributor':
@@ -64,23 +70,37 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: Truck, label: 'Shipments', path: '/distributor/shipments' },
                     { icon: Package, label: 'Inventory', path: '/distributor/inventory' },
                     { icon: Truck, label: 'Incoming', path: '/distributor/incoming' },
-                    { icon: BarChart3, label: 'Quality', path: '/distributor/quality' },
+                    { icon: Mail, label: 'Purchase Requests', path: '/distributor/purchase-orders' },
+                    { icon: MapPin, label: 'Supply Map', path: '/distributor/map' },
                     ...common
                 ];
             case 'retailer':
                 return [
                     { icon: LayoutDashboard, label: 'Dashboard', path: '/retailer' },
-                    { icon: Store, label: 'Products', path: '/retailer/products' },
-                    { icon: BarChart3, label: 'Sales', path: '/retailer/sales' },
+                    { icon: ShoppingBag, label: 'Marketplace', path: '/retailer/marketplace' },
+                    { icon: ClipboardList, label: 'Purchase Orders', path: '/retailer/purchase-orders' },
+                    { icon: Store, label: 'My Products', path: '/retailer/products' },
+                    { icon: BarChart3, label: 'Sales Records', path: '/retailer/sales' },
+                    { icon: MapPin, label: 'Supply Map', path: '/retailer/map' },
                     ...common
                 ];
             case 'admin':
                 return [
                     { icon: LayoutDashboard, label: 'Overview', path: '/admin' },
                     { icon: Users, label: 'Users', path: '/admin/users' },
+                    { icon: Sprout, label: 'Batches', path: '/admin/batches' },
+                    { icon: Truck, label: 'Shipments', path: '/admin/shipments' },
+                    { icon: Truck, label: 'Fleet Hub', path: '/admin/fleet' },
+                    { icon: MapPin, label: 'Supply Map', path: '/admin/map' },
                     { icon: FileText, label: 'Approvals', path: '/admin/approvals' },
-                    { icon: BarChart3, label: 'Platform Stats', path: '/admin/stats' },
+                    { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
                     ...common
+                ];
+            case 'consumer':
+                return [
+                    { icon: LayoutDashboard, label: 'Dashboard', path: '/consumer' },
+                    { icon: Search, label: 'Verification History', path: '/consumer/history' },
+                    // Consumers don't have typical settings yet, but adding for UI balance
                 ];
             default:
                 return [];
@@ -154,11 +174,11 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     </div>
 
                     <button
-                        onClick={handleSignOut}
-                        className="flex items-center gap-3 px-4 py-3 mt-4 w-full rounded-lg text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-sm active:scale-95"
+                        onClick={(role === 'consumer' && !authHelpers.isAuthenticated()) ? () => navigate('/') : handleSignOut}
+                        className={`flex items-center gap-3 px-4 py-3 mt-4 w-full rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-sm active:scale-95 ${(role === 'consumer' && !authHelpers.isAuthenticated()) ? 'text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300' : 'text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300'}`}
                     >
-                        <LogOut size={20} />
-                        Sign Out
+                        {(role === 'consumer' && !authHelpers.isAuthenticated()) ? <LogOut size={20} className="rotate-180" /> : <LogOut size={20} />}
+                        {(role === 'consumer' && !authHelpers.isAuthenticated()) ? 'Return Home' : 'Sign Out'}
                     </button>
                 </div>
             </aside>

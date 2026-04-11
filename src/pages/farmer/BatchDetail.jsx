@@ -20,7 +20,7 @@ const BatchDetail = () => {
         const fetchBatch = async () => {
             try {
                 setLoading(true);
-                const minLoadTime = 3400;
+                const minLoadTime = 1000;
                 const [res] = await Promise.all([
                     api.farmer.getBatchById(batchId),
                     new Promise(resolve => setTimeout(resolve, minLoadTime))
@@ -189,19 +189,29 @@ const BatchDetail = () => {
 
                         {/* Details Section */}
                         <div className="flex-1 space-y-6">
+                            {batch.isTampered && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3 shadow-sm animate-pulse">
+                                    <span className="text-2xl">⚠️</span>
+                                    <div>
+                                        <h3 className="font-bold text-red-800">Security Alert: Data Tampered</h3>
+                                        <p className="text-sm mt-1">The cryptographic signature for this batch does not match its contents. This indicates unauthorized modification to the immutable database records.</p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h1 className="text-3xl font-display font-bold text-slate-800 mb-1">{batch.crop}</h1>
                                     <p className="text-slate-500 text-lg">{batch.variety || 'Standard Variety'}</p>
                                 </div>
-                                <StatusBadge status={batch.status} />
+                                {batch.isTampered ? <StatusBadge status="TAMPERED" type="error" /> : <StatusBadge status={batch.status} />}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <DetailItem label="Batch ID" value={batch.batchId} />
-                                <DetailItem label="Quantity" value={`${batch.quantity} ${batch.unit}`} />
+                                <DetailItem label="Quantity" value={batch.isTampered ? 'DATA INVALID' : `${batch.quantity} ${batch.unit}`} highlight={batch.isTampered} isError={batch.isTampered} />
                                 <DetailItem label="Harvest Date" value={new Date(batch.harvestDate).toLocaleDateString()} />
-                                <DetailItem label="Quality Grade" value={batch.qualityScore || 'N/A'} highlight />
+                                <DetailItem label="Quality Grade" value={batch.qualityScore || 'N/A'} highlight={!batch.isTampered} />
                             </div>
 
                             <div className="pt-6 border-t border-sage-100">
@@ -211,10 +221,10 @@ const BatchDetail = () => {
                                         batch.journey.map((step, index) => (
                                             <TimelineItem
                                                 key={index}
-                                                title={step.status} // Or step.stage
+                                                title={step.stage || step.status || 'Status Updated'}
                                                 date={new Date(step.timestamp).toLocaleDateString()}
-                                                status={step.status}
-                                                description={step.notes || `${step.status} at ${step.location?.name || 'Farm'}`}
+                                                status={step.stage || step.status}
+                                                description={step.details || step.notes || `${step.stage || 'Update'} at ${step.location || 'Farm'}`}
                                                 active={index === 0} // Most recent is active
                                                 isLast={index === batch.journey.length - 1}
                                             />
@@ -232,10 +242,10 @@ const BatchDetail = () => {
     );
 };
 
-const DetailItem = ({ label, value, highlight }) => (
-    <div className="p-3 rounded-lg bg-sage-50/50 border border-sage-100">
-        <p className="text-xs text-slate-500 mb-1">{label}</p>
-        <p className={`font-semibold ${highlight ? 'text-sage-600' : 'text-slate-700'}`}>{value}</p>
+const DetailItem = ({ label, value, highlight, isError }) => (
+    <div className={`p-3 rounded-lg border ${isError ? 'bg-red-50/50 border-red-200' : 'bg-sage-50/50 border-sage-100'}`}>
+        <p className={`text-xs mb-1 ${isError ? 'text-red-400' : 'text-slate-500'}`}>{label}</p>
+        <p className={`font-semibold ${isError ? 'text-red-600' : highlight ? 'text-sage-600' : 'text-slate-700'}`}>{value}</p>
     </div>
 );
 

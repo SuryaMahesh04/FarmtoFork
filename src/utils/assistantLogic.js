@@ -1,6 +1,5 @@
 import { vehicleStore } from './vehicleStore';
 import { shipmentStore } from './shipmentStore';
-import { notificationStore } from './notificationStore';
 
 // Simple intent-based logic engine
 export const assistantLogic = {
@@ -66,13 +65,10 @@ export const assistantLogic = {
 
         // --- DEALS ACCEPTED (Data Query) ---
         if (query.includes('accepted') || query.includes('deals') || query.includes('requests')) {
-            const notifications = notificationStore.getAll().filter(n => n.status === 'accepted');
-            const count = notifications.length;
-
             return t(
-                `You have accepted ${count} deals from farmers this week.`,
-                `आपने इस सप्ताह किसानों से ${count} सौदे स्वीकार किए हैं।`,
-                `మీరు ఈ వారం రైతుల నుండి ${count} ఒప్పందాలను అంగీకరించారు.`
+                "You can view all your accepted requests in the 'Requests' page under the 'Accepted' tab.",
+                "आप अपने सभी स्वीकृत अनुरोधों को 'Requests' पृष्ठ पर 'Accepted' टैब के अंतर्गत देख सकते हैं।",
+                "మీరు ఆమోదించబడిన అన్ని అభ్యర్థనలను 'Requests' పేజీలో 'Accepted' ట్యాబ్ కింద చూడవచ్చు."
             );
         }
         

@@ -8,10 +8,28 @@ import FormInput from '../../ui/FormInput';
 import Select from '../../ui/Select';
 import Button from '../../ui/Button';
 import { indiaStates } from '../../../data/indiaGeoData';
+import LocationPickerModal from '../../ui/LocationPickerModal';
+import { MapPin } from 'lucide-react';
 
 const DistributorOnboarding = () => {
     const [currentStep, setCurrentStep] = useState(0);
-    const { register, handleSubmit, formState: { errors }, trigger, watch } = useForm({ mode: 'onChange' });
+    const [isMapOpen, setIsMapOpen] = useState(false);
+    const [mapData, setMapData] = useState(null);
+    const { register, handleSubmit, formState: { errors }, trigger, watch, setValue } = useForm({ mode: 'onChange' });
+
+    const onLocationConfirm = (locationData) => {
+        const { coordinates, address } = locationData;
+        if (address) {
+            setValue('state', address.state);
+            setValue('location', address.city);
+            
+            // Store coordinates for profile update
+            setMapData({ 
+                coordinates: coordinates,
+                addressObject: address 
+            });
+        }
+    };
 
     const steps = [
         { title: 'Account Setup', icon: Lock },
@@ -66,7 +84,13 @@ const DistributorOnboarding = () => {
                     coldStorageAvailable: data.storageType === 'cold_storage' || data.storageType === 'mixed',
                     gstNumber: data.gst,
                     fssaiLicense: data.fssai,
-                    bankAccount: data.bankAccount
+                    bankAccount: data.bankAccount,
+                    address: {
+                        formattedAddress: mapData?.addressObject?.formattedAddress || `${data.location}, ${data.state}`,
+                        city: data.location,
+                        state: data.state,
+                        coordinates: mapData?.coordinates || null
+                    }
                 };
 
                 // 4. Update Profile
@@ -145,7 +169,17 @@ const DistributorOnboarding = () => {
             case 2:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
-                        <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Warehouse & Storage</h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-display font-semibold text-slate-700">Warehouse & Storage</h2>
+                            <button 
+                                type="button"
+                                onClick={() => setIsMapOpen(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-all shadow-sm"
+                            >
+                                <MapPin size={14} />
+                                Choose from Map
+                            </button>
+                        </div>
                         <Select label="Storage Type" name="storageType" options={storageTypes} register={register} required="Storage Type is required" error={errors.storageType} icon={Database} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormInput label="Capacity (Tonnes)" name="capacity" type="number" register={register} required="Capacity is required" error={errors.capacity} />
@@ -190,6 +224,12 @@ const DistributorOnboarding = () => {
                     </form>
                 </div>
             </div>
+
+            <LocationPickerModal
+                isOpen={isMapOpen}
+                onClose={() => setIsMapOpen(false)}
+                onConfirm={onLocationConfirm}
+            />
         </div>
     );
 };

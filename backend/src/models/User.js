@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         required: true,
-        enum: ['farmer', 'transporter', 'distributor', 'retailer', 'admin', 'driver']
+        enum: ['farmer', 'transporter', 'distributor', 'retailer', 'admin', 'driver', 'consumer']
     },
     isVerified: {
         type: Boolean,
@@ -43,6 +43,7 @@ const userSchema = new mongoose.Schema({
         landType: String,
         primaryCrop: String,
         organicCertified: Boolean,
+        organicCertificateUrl: String,
 
         // Transporter/Distributor/Retailer-specific
         companyName: String,

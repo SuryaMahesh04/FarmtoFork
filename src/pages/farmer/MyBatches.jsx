@@ -23,7 +23,7 @@ const MyBatches = () => {
     const fetchBatches = async () => {
         try {
             setLoading(true);
-            const minLoadTime = 3400;
+            const minLoadTime = 1000;
             const [res] = await Promise.all([
                 api.farmer.getBatches(),
                 new Promise(resolve => setTimeout(resolve, minLoadTime))
@@ -43,13 +43,13 @@ const MyBatches = () => {
     };
 
     const columns = [
-        { header: 'Batch ID', accessor: 'batchId', render: (row) => <span className="font-mono text-xs">{row.batchId}</span> },
+        { header: 'Batch ID', accessor: 'batchId', render: (row) => row.isTampered ? <span className="text-red-500 font-bold flex items-center gap-1" title="Data Tampered">⚠️ <span className="font-mono text-xs text-red-500">{row.batchId}</span></span> : <span className="font-mono text-xs">{row.batchId}</span> },
         { header: 'Crop', accessor: 'crop' },
         { header: 'Variety', accessor: 'variety' },
-        { header: 'Quantity', accessor: 'quantity', render: (row) => `${row.quantity} ${row.unit}` },
+        { header: 'Quantity', accessor: 'quantity', render: (row) => row.isTampered ? <span className="text-red-500 font-bold">TAMPERED</span> : `${row.quantity} ${row.unit}` },
         { header: 'Date', accessor: 'harvestDate', render: (row) => new Date(row.harvestDate).toLocaleDateString() },
-        { header: 'Quality', accessor: 'qualityScore' },
-        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
+        { header: 'Quality', accessor: 'qualityScore', render: (row) => row.isTampered ? <span className="text-red-500 font-bold">--</span> : row.qualityScore },
+        { header: 'Status', accessor: 'status', render: (row) => row.isTampered ? <StatusBadge status="TAMPERED" type="error" /> : <StatusBadge status={row.status} /> },
     ];
 
     const filteredBatches = batches.filter(batch => {

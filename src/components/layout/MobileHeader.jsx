@@ -1,10 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User as UserIcon } from 'lucide-react';
 import logo from '../../assets/logo2.png';
+import { api, authHelpers } from '../../utils/api';
 
 const MobileHeader = ({ role }) => {
     const navigate = useNavigate();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Fetch unread count from actual API
+    useEffect(() => {
+        const fetchUnreadCount = async () => {
+             if (!authHelpers.isAuthenticated()) return; // Only fetch if logged in
+             try {
+                 const res = await api.notification.getAll();
+                 if (res.success) {
+                     setUnreadCount(res.unreadCount);
+                 }
+             } catch (error) {
+                 // Silently fail to not clutter console
+             }
+        };
+        
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 15000); // Polling every 15s
+        return () => clearInterval(interval);
+    }, []);
 
     const getRoleName = (role) => {
         const roleNames = {
@@ -39,9 +60,16 @@ const MobileHeader = ({ role }) => {
                 {/* Actions */}
                 <div className="flex items-center gap-2">
                     {/* Notifications */}
-                    <button className="relative p-2 rounded-full hover:bg-slate-100 transition-colors">
+                    <button 
+                        onClick={() => navigate('/notifications')}
+                        className="relative p-2 rounded-full hover:bg-slate-100 transition-colors"
+                    >
                         <Bell size={20} className="text-slate-600" />
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white"></span>
+                        {unreadCount > 0 && (
+                            <span className="absolute top-0 right-0 min-w-[16px] h-[16px] flex items-center justify-center text-[9px] font-bold text-white bg-red-500 rounded-full border border-white shadow-sm">
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                        )}
                     </button>
 
                     {/* Profile */}

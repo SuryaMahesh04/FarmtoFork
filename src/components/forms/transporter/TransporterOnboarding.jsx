@@ -9,6 +9,8 @@ import Select from '../../ui/Select';
 import Button from '../../ui/Button';
 import { indiaStates } from '../../../data/indiaGeoData';
 import { api, authHelpers } from '../../../utils/api';
+import LocationPickerModal from '../../ui/LocationPickerModal';
+import { MapPin } from 'lucide-react';
 
 const TransporterOnboarding = () => {
     const navigate = useNavigate();
@@ -16,7 +18,23 @@ const TransporterOnboarding = () => {
     const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const { register, handleSubmit, formState: { errors }, trigger, watch } = useForm({ mode: 'onChange' });
+    const [isMapOpen, setIsMapOpen] = useState(false);
+    const { register, handleSubmit, formState: { errors }, trigger, watch, setValue } = useForm({ mode: 'onChange' });
+
+    const onLocationConfirm = (locationData) => {
+        const { coordinates, address } = locationData;
+        if (address) {
+            setValue('primaryState', address.state);
+            setValue('hubCity', address.city);
+            
+            // Store coordinates for profile update
+            setFormData(prev => ({ 
+                ...prev, 
+                coordinates: coordinates,
+                addressObject: address 
+            }));
+        }
+    };
 
     const steps = [
         { title: 'Account Setup', icon: Lock },
@@ -64,7 +82,12 @@ const TransporterOnboarding = () => {
                     fleetSize: parseInt(data.fleetSize),
                     vehicleTypes: [data.vehicleType],
                     serviceAreas: [data.primaryState],
-                    // Store other fields if needed by backend model
+                    address: {
+                        formattedAddress: formData.addressObject?.formattedAddress || `${data.hubCity}, ${data.primaryState}`,
+                        city: data.hubCity,
+                        state: data.primaryState,
+                        coordinates: formData.coordinates || null
+                    }
                 });
 
                 if (updateResponse.success) {
@@ -158,7 +181,17 @@ const TransporterOnboarding = () => {
             case 3:
                 return (
                     <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-4">
-                        <h2 className="text-xl font-display font-semibold text-slate-700 mb-4">Operating Regions</h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-display font-semibold text-slate-700">Operating Regions</h2>
+                            <button 
+                                type="button"
+                                onClick={() => setIsMapOpen(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-sky-600 bg-sky-50 border border-sky-100 hover:bg-sky-100 transition-all shadow-sm"
+                            >
+                                <MapPin size={14} />
+                                Choose from Map
+                            </button>
+                        </div>
                         <Select label="Primary State of Operation" name="primaryState" options={indiaStates} register={register} required="State is required" error={errors.primaryState} icon={Map} />
                         <FormInput label="Service Hub City" name="hubCity" register={register} required="Hub City is required" error={errors.hubCity} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,6 +250,12 @@ const TransporterOnboarding = () => {
                     </form>
                 </div>
             </div>
+
+            <LocationPickerModal
+                isOpen={isMapOpen}
+                onClose={() => setIsMapOpen(false)}
+                onConfirm={onLocationConfirm}
+            />
         </div>
     );
 };

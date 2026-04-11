@@ -37,7 +37,7 @@ const ShipmentDetail = ({ role: propsRole }) => {
     const fetchShipmentDetails = async () => {
         try {
             setLoading(true);
-            const minLoadTime = 3400;
+            const minLoadTime = 1000;
             const [response] = await Promise.all([
                 api.request(`/shipments/${shipmentId}`),
                 new Promise(resolve => setTimeout(resolve, minLoadTime))

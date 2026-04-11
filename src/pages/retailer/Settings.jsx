@@ -1,20 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Bell, Shield, Save, Store } from 'lucide-react';
+import { api, authHelpers } from '../../utils/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
+import PlacesAutocomplete from '../../components/ui/PlacesAutocomplete';
+import LocationPickerModal from '../../components/ui/LocationPickerModal';
+import { MapPin } from 'lucide-react';
 
 const Settings = () => {
     const [activeTab, setActiveTab] = useState('profile');
+    const [loading, setLoading] = useState(false);
+    const [isMapOpen, setIsMapOpen] = useState(false);
     const [formData, setFormData] = useState({
-        name: 'Surya Mahesh',
-        email: 'surya@example.com',
-        phone: '+91 98765 43210',
-        storeName: 'Fresh Mart',
-        storeAddress: '456 Main Street, Mumbai',
-        gstNumber: 'GST-MH-2024-001',
+        name: '',
+        email: '',
+        phone: '',
+        storeName: '',
+        storeAddress: '',
+        address: null,
+        gstNumber: '',
         notifications: true,
         stockAlerts: false,
     });
+
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            const res = await api.auth.getMe();
+            if (res.success && res.data) {
+                const user = res.data;
+                const profile = user.profile || {};
+                setFormData(prev => ({
+                    ...prev,
+                    name: profile.fullName || '',
+                    email: user.email || '',
+                    phone: profile.mobile || '',
+                    storeName: profile.storeName || '',
+                    storeAddress: profile.storeAddress || '',
+                    address: profile.address || null,
+                    gstNumber: profile.gstNumber || '',
+                }));
+            }
+        } catch (error) {
+            console.error('Fetch profile error', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const tabs = [
         { id: 'profile', label: 'Profile Settings', icon: User },
@@ -30,8 +66,28 @@ const Settings = () => {
         }));
     };
 
-    const handleSave = () => {
-        alert('Settings saved successfully!');
+    const handleSave = async () => {
+        try {
+            setLoading(true);
+            const profileUpdate = {
+                fullName: formData.name,
+                mobile: formData.phone,
+                storeName: formData.storeName,
+                storeAddress: formData.storeAddress,
+                gstNumber: formData.gstNumber,
+                address: formData.address
+            };
+
+            const res = await api.auth.updateProfile(profileUpdate);
+            if (res.success) {
+                authHelpers.saveUser(res.data);
+                alert('Settings saved successfully!');
+            }
+        } catch (error) {
+            alert('Failed to save settings: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -50,8 +106,8 @@ const Settings = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-white text-slate-600 hover:bg-green-50'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-white text-slate-600 hover:bg-emerald-50'
                                     }`}
                             >
                                 <tab.icon size={18} />
@@ -64,7 +120,17 @@ const Settings = () => {
                     <div className="flex-1 bg-white p-6 rounded-xl shadow-sm border border-slate-100 min-h-[500px]">
                         {activeTab === 'profile' && (
                             <div className="space-y-6 animate-in fade-in">
-                                <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-100 pb-2">Store & Profile Information</h2>
+                                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                    <h2 className="text-lg font-semibold text-slate-800">Store & Profile Information</h2>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setIsMapOpen(true)}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-all shadow-sm"
+                                    >
+                                        <MapPin size={14} />
+                                        Pin on Map
+                                    </button>
+                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
@@ -74,7 +140,7 @@ const Settings = () => {
                                             name="name"
                                             value={formData.name}
                                             onChange={handleChange}
-                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-400 focus:outline-none"
+                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -84,7 +150,7 @@ const Settings = () => {
                                             name="storeName"
                                             value={formData.storeName}
                                             onChange={handleChange}
-                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-400 focus:outline-none"
+                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -94,7 +160,8 @@ const Settings = () => {
                                             name="email"
                                             value={formData.email}
                                             onChange={handleChange}
-                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-400 focus:outline-none"
+                                            disabled
+                                            className="w-full p-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -104,17 +171,83 @@ const Settings = () => {
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleChange}
-                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-400 focus:outline-none"
+                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
                                         />
                                     </div>
+
+                                    <div className="space-y-4 md:col-span-2">
+                                        <label className="text-sm font-medium text-slate-700">Store Location (GPS)</label>
+                                        <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-sm border border-emerald-100 mb-2">
+                                            Pinpoint your store on the global map for supply chain transparency.
+                                        </div>
+                                        <PlacesAutocomplete
+                                            value={formData.address}
+                                            onChange={(addr) => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    address: addr,
+                                                    storeAddress: addr.formattedAddress || prev.storeAddress
+                                                }));
+                                            }}
+                                            placeholder="Search for your store location..."
+                                        />
+                                        
+                                        <div className="grid grid-cols-2 gap-4 mt-2">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700">Latitude</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 12.9716"
+                                                    value={formData.address?.coordinates?.lat || ''}
+                                                    onChange={(e) => {
+                                                        const newLat = parseFloat(e.target.value);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            address: {
+                                                                ...prev.address,
+                                                                coordinates: {
+                                                                    ...prev.address?.coordinates,
+                                                                    lat: isNaN(newLat) ? '' : newLat
+                                                                }
+                                                            }
+                                                        }));
+                                                    }}
+                                                    className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-700">Longitude</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 77.5946"
+                                                    value={formData.address?.coordinates?.lng || ''}
+                                                    onChange={(e) => {
+                                                        const newLng = parseFloat(e.target.value);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            address: {
+                                                                ...prev.address,
+                                                                coordinates: {
+                                                                    ...prev.address?.coordinates,
+                                                                    lng: isNaN(newLng) ? '' : newLng
+                                                                }
+                                                            }
+                                                        }));
+                                                    }}
+                                                    className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-2 md:col-span-2">
-                                        <label className="text-sm font-medium text-slate-700">Store Address</label>
+                                        <label className="text-sm font-medium text-slate-700">Full Store Address</label>
                                         <input
                                             type="text"
                                             name="storeAddress"
                                             value={formData.storeAddress}
                                             onChange={handleChange}
-                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-400 focus:outline-none"
+                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -124,7 +257,7 @@ const Settings = () => {
                                             name="gstNumber"
                                             value={formData.gstNumber}
                                             onChange={handleChange}
-                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-400 focus:outline-none"
+                                            className="w-full p-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
                                         />
                                     </div>
                                 </div>
@@ -142,7 +275,7 @@ const Settings = () => {
                                 <div className="space-y-4">
                                     <label className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 cursor-pointer">
                                         <div className="flex gap-3">
-                                            <Bell className="text-green-600" />
+                                            <Bell className="text-emerald-600" />
                                             <div>
                                                 <p className="font-medium text-slate-800">Push Notifications</p>
                                                 <p className="text-sm text-slate-500">Receive alerts for new sales and orders</p>
@@ -153,13 +286,13 @@ const Settings = () => {
                                             name="notifications"
                                             checked={formData.notifications}
                                             onChange={handleChange}
-                                            className="w-5 h-5 text-green-600 rounded bg-gray-100 border-gray-300 focus:ring-green-500"
+                                            className="w-5 h-5 text-emerald-600 rounded bg-gray-100 border-gray-300 focus:ring-emerald-500"
                                         />
                                     </label>
 
                                     <label className="flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:bg-slate-50 cursor-pointer">
                                         <div className="flex gap-3">
-                                            <Store className="text-green-600" />
+                                            <Store className="text-emerald-600" />
                                             <div>
                                                 <p className="font-medium text-slate-800">Stock Alerts</p>
                                                 <p className="text-sm text-slate-500">Get notified when products are running low</p>
@@ -170,7 +303,7 @@ const Settings = () => {
                                             name="stockAlerts"
                                             checked={formData.stockAlerts}
                                             onChange={handleChange}
-                                            className="w-5 h-5 text-green-600 rounded bg-gray-100 border-gray-300 focus:ring-green-500"
+                                            className="w-5 h-5 text-emerald-600 rounded bg-gray-100 border-gray-300 focus:ring-emerald-500"
                                         />
                                     </label>
                                 </div>
@@ -200,6 +333,26 @@ const Settings = () => {
                     </div>
                 </div>
             </div>
+
+            <LocationPickerModal
+                isOpen={isMapOpen}
+                onClose={() => setIsMapOpen(false)}
+                onConfirm={(locData) => {
+                    const { coordinates, address } = locData;
+                    setFormData(prev => ({
+                        ...prev,
+                        address: {
+                            ...prev.address,
+                            formattedAddress: address.formattedAddress,
+                            city: address.city,
+                            state: address.state,
+                            coordinates: coordinates
+                        },
+                        storeAddress: address.formattedAddress
+                    }));
+                }}
+                initialLocation={formData.address?.coordinates}
+            />
         </DashboardLayout>
     );
 };

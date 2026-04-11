@@ -1,29 +1,78 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Truck, MapPin, Calendar, Clock } from 'lucide-react';
+import { api } from '../../utils/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import useMediaQuery from '../../utils/useMediaQuery';
-
-const incomingShipments = [
-    { id: 'INC-001', origin: 'Green Valley Farm', item: 'Wheat - 25T', vehicle: 'MH-01-AB-1234', eta: '2 hours', date: '2024-12-14', status: 'in_transit' },
-    { id: 'INC-002', origin: 'Sunrise Organics', item: 'Tomatoes - 10T', vehicle: 'MH-12-CD-5678', eta: '4 hours', date: '2024-12-14', status: 'in_transit' },
-    { id: 'INC-003', origin: 'Fresh Fruits Co.', item: 'Apples - 8T', vehicle: 'MH-15-EF-9101', eta: 'Tomorrow', date: '2024-12-15', status: 'scheduled' },
-    { id: 'INC-004', origin: 'Dairy Fresh Ltd', item: 'Milk Products - 5T', vehicle: 'MH-31-GH-1121', eta: '6 hours', date: '2024-12-14', status: 'in_transit' },
-    { id: 'INC-005', origin: 'Grain Masters', item: 'Rice - 30T', vehicle: 'MH-20-IJ-3141', eta: 'Tomorrow', date: '2024-12-15', status: 'scheduled' }
-];
+import Loader from '../../components/ui/Loader';
 
 const Incoming = () => {
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const [incoming, setIncoming] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        inTransit: 0,
+        scheduled: 0,
+        today: 0,
+        totalWeight: 0
+    });
+
+    useEffect(() => {
+        fetchIncoming();
+    }, []);
+
+    const fetchIncoming = async () => {
+        try {
+            setLoading(true);
+            const res = await api.distributor.getIncoming();
+            if (res.success) {
+                setIncoming(res.data);
+                
+                // Calculate stats
+                const now = new Date();
+                const todayStr = now.toISOString().split('T')[0];
+                
+                let inTransit = 0;
+                let scheduled = 0;
+                let today = 0;
+                let totalWeight = 0;
+
+                res.data.forEach(ship => {
+                    if (ship.status === 'in-transit') inTransit++;
+                    if (ship.status === 'pending' || ship.status === 'accepted') scheduled++;
+                    
+                    const shipDate = new Date(ship.createdAt).toISOString().split('T')[0];
+                    if (shipDate === todayStr) today++;
+                    
+                    if (ship.batch) totalWeight += (ship.batch.quantity || 0);
+                });
+
+                setStats({ inTransit, scheduled, today, totalWeight: Math.round(totalWeight) });
+            }
+        } catch (error) {
+            console.error('Failed to fetch incoming shipments:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const columns = [
-        { header: 'Shipment ID', accessor: 'id' },
-        { header: 'Origin', accessor: 'origin' },
-        { header: 'Items', accessor: 'item' },
-        { header: 'Vehicle', accessor: 'vehicle' },
-        { header: 'ETA', accessor: 'eta' },
+        { header: 'Shipment ID', accessor: '_id', render: (row) => <span className="font-mono text-xs text-slate-500 uppercase">{row._id.slice(-8)}</span> },
+        { header: 'Origin', accessor: 'farmer', render: (row) => row.farmer?.profile?.fullName || 'N/A' },
+        { header: 'Items', accessor: 'batch', render: (row) => row.batch ? `${row.batch.crop} - ${row.batch.quantity}${row.batch.unit}` : 'N/A' },
+        { header: 'Date', accessor: 'createdAt', render: (row) => new Date(row.createdAt).toLocaleDateString() },
+        { header: 'ETA', accessor: 'eta', render: (row) => row.eta || 'Calculating...' },
         { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
     ];
+
+    if (loading) {
+        return (
+            <DashboardLayout role="distributor">
+                <Loader text="Fetching incoming shipments..." />
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout role="distributor">
@@ -40,28 +89,28 @@ const Incoming = () => {
                             <Truck size={18} />
                             <span className="text-xs font-medium">In Transit</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-800">3</p>
+                        <p className="text-2xl font-bold text-slate-800">{stats.inTransit}</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                         <div className="flex items-center gap-2 text-slate-600 mb-2">
                             <Calendar size={18} />
                             <span className="text-xs font-medium">Scheduled</span>
                         </div>
-                        <p className="text-2xl font-bold text-blue-600">2</p>
+                        <p className="text-2xl font-bold text-blue-600">{stats.scheduled}</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                         <div className="flex items-center gap-2 text-slate-600 mb-2">
                             <Clock size={18} />
-                            <span className="text-xs font-medium">Today</span>
+                            <span className="text-xs font-medium">Received Today</span>
                         </div>
-                        <p className="text-2xl font-bold text-emerald-600">3</p>
+                        <p className="text-2xl font-bold text-emerald-600">{stats.today}</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                         <div className="flex items-center gap-2 text-slate-600 mb-2">
                             <MapPin size={18} />
                             <span className="text-xs font-medium">Total Weight</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-800">78T</p>
+                        <p className="text-2xl font-bold text-slate-800">{stats.totalWeight}kg</p>
                     </div>
                 </div>
 
@@ -72,7 +121,13 @@ const Incoming = () => {
                             <h2 className="text-base md:text-lg font-display font-semibold text-slate-700">Active Incoming Shipments</h2>
                         </div>
                         <div className={isMobile ? 'overflow-x-auto' : ''}>
-                            <DataTable columns={columns} data={incomingShipments} />
+                            {incoming.length > 0 ? (
+                                <DataTable columns={columns} data={incoming} />
+                            ) : (
+                                <div className="p-12 text-center text-slate-400">
+                                    No active incoming shipments found.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

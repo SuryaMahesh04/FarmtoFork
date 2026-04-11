@@ -1,40 +1,122 @@
-import React, { useState } from 'react';
-import { Store, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Store, Search, Filter, Plus, CheckCircle, Package, Scan } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import useMediaQuery from '../../utils/useMediaQuery';
-
-const allProducts = [
-    { id: 'PRD-001', name: 'Basmati Rice 5kg', category: 'Grains', price: '₹450', stock: '85 bags', status: 'good', verified: true },
-    { id: 'PRD-002', name: 'Wheat Flour 10kg', category: 'Grains', price: '₹380', stock: '120 bags', status: 'good', verified: true },
-    { id: 'PRD-003', name: 'Organic Honey 500g', category: 'Others', price: '₹650', stock: '4 jars', status: 'critical', verified: true },
-    { id: 'PRD-004', name: 'Fresh Tomatoes', category: 'Vegetables', price: '₹60/kg', stock: '45 kg', status: 'good', verified: true },
-    { id: 'PRD-005', name: 'Red Onions', category: 'Vegetables', price: '₹45/kg', stock: '80 kg', status: 'good', verified: true },
-    { id: 'PRD-006', name: 'Apples (Kashmiri)', category: 'Fruits', price: '₹180/kg', stock: '35 kg', status: 'good', verified: true },
-    { id: 'PRD-007', name: 'Oranges', category: 'Fruits', price: '₹80/kg', stock: '8 kg', status: 'warning', verified: true },
-    { id: 'PRD-008', name: 'Tur Dal Premium', category: 'Grains', price: '₹220/kg', stock: '5 pkts', status: 'critical', verified: true },
-    { id: 'PRD-009', name: 'Milk (Fresh)', category: 'Dairy', price: '₹65/L', stock: '50 L', status: 'good', verified: true },
-    { id: 'PRD-010', name: 'Yogurt Cups', category: 'Dairy', price: '₹25', stock: '120 cups', status: 'good', verified: true }
-];
+import api from '../../utils/api';
+import toast from 'react-hot-toast';
 
 const Products = () => {
     const isMobile = useMediaQuery('(max-width: 768px)');
     const [filterCategory, setFilterCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showAcquireModal, setShowAcquireModal] = useState(false);
+    const [acquireBatchId, setAcquireBatchId] = useState('');
+    const [acquiring, setAcquiring] = useState(false);
+
+    const fetchProducts = async () => {
+        try {
+            setLoading(true);
+            const res = await api.retailer.getProducts();
+            if (res.success) {
+                // Map to UI friendly format
+                const formatted = res.data.map(b => ({
+                    id: b.batchId,
+                    _id: b._id,
+                    name: `${b.crop} ${b.variety ? `(${b.variety})` : ''}`,
+                    category: determineCategory(b.crop),
+                    price: b.pricePerUnit ? `₹${b.pricePerUnit}` : 'N/A',
+                    stock: `${b.quantity} ${b.unit}`,
+                    status: b.qualityScore >= 80 ? 'good' : (b.qualityScore >= 50 ? 'warning' : 'critical'),
+                    verified: b.qrGenerated,
+                    availableForSale: b.availableForSale
+                }));
+                setProducts(formatted);
+            }
+        } catch (error) {
+            toast.error('Failed to load products');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    const determineCategory = (crop) => {
+        const c = crop.toLowerCase();
+        if (c.includes('rice') || c.includes('wheat') || c.includes('dal')) return 'Grains';
+        if (c.includes('tomato') || c.includes('onion') || c.includes('potato')) return 'Vegetables';
+        if (c.includes('apple') || c.includes('orange') || c.includes('mango')) return 'Fruits';
+        if (c.includes('milk') || c.includes('yogurt')) return 'Dairy';
+        return 'Others';
+    };
+
+    const handleAcquire = async (e) => {
+        e.preventDefault();
+        if (!acquireBatchId) return toast.error('Enter a Batch ID');
+        try {
+            setAcquiring(true);
+            await api.retailer.acquireBatch(acquireBatchId);
+            toast.success('Batch acquired successfully');
+            setShowAcquireModal(false);
+            setAcquireBatchId('');
+            fetchProducts();
+        } catch (error) {
+            toast.error(error.message || 'Failed to acquire batch');
+        } finally {
+            setAcquiring(false);
+        }
+    };
+
+    const handleMarkAvailable = async (id) => {
+        try {
+            await api.retailer.markAvailable(id);
+            toast.success('Product marked as available for sale');
+            fetchProducts();
+        } catch (error) {
+            toast.error(error.message || 'Failed to mark available');
+        }
+    };
 
     const columns = [
         { header: 'Product ID', accessor: 'id' },
         { header: 'Product Name', accessor: 'name' },
         { header: 'Category', accessor: 'category' },
-        { header: 'Price', accessor: 'price' },
         { header: 'Stock', accessor: 'stock' },
-        { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
-        { header: 'Verified', accessor: 'verified', render: (row) => row.verified ? <span className="text-green-600 text-xs">✓ QR</span> : <span className="text-slate-400 text-xs">-</span> },
+        { header: 'Quality', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
+        { 
+            header: 'Sale Status', 
+            accessor: 'availableForSale', 
+            render: (row) => row.availableForSale ? 
+                <span className="text-green-600 text-xs font-semibold flex items-center gap-1"><CheckCircle size={14}/> Selling</span> : 
+                <Button size="sm" variant="outline" className="text-xs py-1 h-7" onClick={() => handleMarkAvailable(row._id)}>Mark For Sale</Button>
+        },
+        {
+            header: 'Actions',
+            accessor: '_id',
+            render: (row) => (
+                <div className="flex gap-2">
+                    <Button 
+                        size="sm" 
+                        variant="outline" 
+                        icon={Scan} 
+                        onClick={() => navigate(`/retailer/consumer-preview/${row._id}`)}
+                    >
+                        Preview
+                    </Button>
+                </div>
+            )
+        }
     ];
 
-    const filteredProducts = allProducts.filter(product => {
+    const filteredProducts = products.filter(product => {
         const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
         const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             product.id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -42,20 +124,25 @@ const Products = () => {
     });
 
     const categoryCounts = {
-        all: allProducts.length,
-        Grains: allProducts.filter(p => p.category === 'Grains').length,
-        Vegetables: allProducts.filter(p => p.category === 'Vegetables').length,
-        Fruits: allProducts.filter(p => p.category === 'Fruits').length,
-        Dairy: allProducts.filter(p => p.category === 'Dairy').length,
-        Others: allProducts.filter(p => p.category === 'Others').length
+        all: products.length,
+        Grains: products.filter(p => p.category === 'Grains').length,
+        Vegetables: products.filter(p => p.category === 'Vegetables').length,
+        Fruits: products.filter(p => p.category === 'Fruits').length,
+        Dairy: products.filter(p => p.category === 'Dairy').length,
+        Others: products.filter(p => p.category === 'Others').length
     };
 
     return (
         <DashboardLayout role="retailer">
             <div className="space-y-6">
-                <div className="animate-in">
-                    <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Product Catalog</h1>
-                    <p className="text-sm md:text-base text-slate-500">Manage your store inventory</p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in">
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Product Catalog</h1>
+                        <p className="text-sm md:text-base text-slate-500">Manage your store inventory</p>
+                    </div>
+                    <Button icon={Package} onClick={() => setShowAcquireModal(true)}>
+                        Acquire Batch
+                    </Button>
                 </div>
 
                 {/* Category Filter */}
@@ -111,17 +198,66 @@ const Products = () => {
                             )}
                         </div>
                         <div className={isMobile ? 'overflow-x-auto' : ''}>
-                            <DataTable columns={columns} data={filteredProducts} />
+                            {loading ? (
+                                <div className="p-8 text-center text-slate-500">Loading products...</div>
+                            ) : (
+                                <DataTable columns={columns} data={filteredProducts} />
+                            )}
                         </div>
                     </div>
 
-                    {filteredProducts.length === 0 && (
+                    {!loading && filteredProducts.length === 0 && (
                         <div className="text-center py-12">
                             <Store className="mx-auto text-slate-300 mb-4" size={48} />
                             <p className="text-slate-500">No products found matching your criteria</p>
                         </div>
                     )}
                 </div>
+
+                {/* Acquire Modal */}
+                {showAcquireModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                                <h2 className="text-xl font-display font-bold text-slate-800">Acquire Received Batch</h2>
+                            </div>
+                            <form onSubmit={handleAcquire} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        Batch ID or Scanner Input
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. BTH-000001"
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                        value={acquireBatchId}
+                                        onChange={(e) => setAcquireBatchId(e.target.value)}
+                                    />
+                                    <p className="text-xs text-slate-500 mt-2">Enter the ID of the batch delivered to your store by the distributor to add it to your inventory.</p>
+                                </div>
+                                <div className="flex gap-3 pt-4">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="flex-1"
+                                        onClick={() => setShowAcquireModal(false)}
+                                        disabled={acquiring}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        className="flex-1"
+                                        disabled={acquiring}
+                                    >
+                                        {acquiring ? 'Acquiring...' : 'Acquire Batch'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );

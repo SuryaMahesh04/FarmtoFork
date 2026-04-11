@@ -31,7 +31,7 @@ const CreateShipment = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const minLoadTime = 3400;
+            const minLoadTime = 1000;
             const [batchesRes, distRes, transpRes, shipmentsRes] = await Promise.all([
                 api.farmer.getBatches({ status: 'active' }), // Only active batches
                 api.shipment.getDistributors(),
