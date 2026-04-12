@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Warehouse, TrendingUp, ClipboardCheck, Truck, Plus } from 'lucide-react';
+import { Package, Warehouse, TrendingUp, Truck, Plus, PackageCheck, Mail } from 'lucide-react';
 import {
     PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, ResponsiveContainer,
     AreaChart, Area, CartesianGrid, LineChart, Line
@@ -28,8 +28,10 @@ const DistributorDashboard = () => {
     const [error, setError] = useState(null);
     const [stats, setStats] = useState(null);
     const [inventory, setInventory] = useState([]);
+    const [recentPOs, setRecentPOs] = useState([]);
     const [analytics, setAnalytics] = useState(null);
     const [user, setUser] = useState(null);
+    const [processingPO, setProcessingPO] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -38,18 +40,20 @@ const DistributorDashboard = () => {
                 const currentUser = authHelpers.getUser();
                 setUser(currentUser);
 
-                const minLoadTime = 3400;
-                const [statsRes, inventoryRes, analyticsRes, userRes] = await Promise.all([
+                const minLoadTime = 1000;
+                const [statsRes, inventoryRes, analyticsRes, userRes, posRes] = await Promise.all([
                     api.distributor.getStats(),
                     api.distributor.getInventory(),
                     api.distributor.getAnalytics(),
                     api.auth.getMe(),
+                    api.distributor.getIncomingPOs(),
                     new Promise(resolve => setTimeout(resolve, minLoadTime))
                 ]);
 
                 if (statsRes.success) setStats(statsRes.data);
                 if (inventoryRes.success) setInventory(inventoryRes.data);
                 if (analyticsRes.success) setAnalytics(analyticsRes.data);
+                if (posRes.success) setRecentPOs(posRes.data.slice(0, 5));
                 if (userRes.success) {
                     setUser(userRes.data);
                     // Update local storage to keep it fresh
@@ -76,6 +80,77 @@ const DistributorDashboard = () => {
         { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
     ];
 
+    const poColumns = [
+        { 
+            header: 'PO Number', 
+            accessor: 'poNumber',
+            render: (row) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-slate-800">{row.poNumber}</span>
+                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A'}</span>
+                </div>
+            )
+        },
+        { 
+            header: 'Retailer', 
+            accessor: 'retailerId',
+            render: (row) => <span className="text-sm font-medium text-slate-700">{row.retailerId?.profile?.storeName || 'Retailer'}</span>
+        },
+        { 
+            header: 'Product', 
+            accessor: 'batchId',
+            render: (row) => <span className="text-sm font-bold text-emerald-600">{row.batchId?.crop || 'Item'}</span>
+        },
+        { 
+            header: 'Status', 
+            accessor: 'status', 
+            render: (row) => (
+                <StatusBadge 
+                    status={row.status === 'accepted' ? 'good' : (row.status === 'pending' ? 'warning' : 'critical')}
+                    className="capitalize text-[10px] font-bold"
+                >
+                    {row.status}
+                </StatusBadge>
+            )
+        },
+        {
+            header: 'Actions',
+            accessor: '_id',
+            render: (row) => (
+                row.status === 'pending' ? (
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            onClick={() => handleAcceptPO(row._id)}
+                            disabled={processingPO === row._id}
+                            className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-all font-bold text-xs flex items-center gap-1"
+                        >
+                            Accept
+                        </button>
+                    </div>
+                ) : <span className="text-xs text-slate-400 font-medium italic">Processed</span>
+            )
+        }
+    ];
+
+    const handleAcceptPO = async (id) => {
+        try {
+            setProcessingPO(id);
+            const res = await api.distributor.acceptPO(id);
+            if (res.success) {
+                toast.success('Purchase Order accepted!');
+                // Refresh data
+                const statsRes = await api.distributor.getStats();
+                const posRes = await api.distributor.getIncomingPOs();
+                if (statsRes.success) setStats(statsRes.data);
+                if (posRes.success) setRecentPOs(posRes.data.slice(0, 5));
+            }
+        } catch (error) {
+            toast.error(error.message || 'Failed to accept PO');
+        } finally {
+            setProcessingPO(null);
+        }
+    };
+
     const ChartCardComponent = isMobile ? MobileChartCard : ChartCard;
     const chartHeight = isMobile ? 220 : 300;
     const barChartHeight = isMobile ? 200 : 250;
@@ -88,10 +163,8 @@ const DistributorDashboard = () => {
         );
     }
 
-    // Fallback data if API returns empty/null to avoid crashes during initial dev
     const inventoryTrendData = analytics?.inventoryTrend || [];
     const productCategoryData = analytics?.productDistribution || [];
-    const qualityMetricsData = analytics?.qualityMetrics || [];
 
     return (
         <DashboardLayout role="distributor">
@@ -115,17 +188,17 @@ const DistributorDashboard = () => {
                 <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-4 gap-6'}`}>
                     {isMobile ? (
                         <>
-                            <MobileMetricCard title="Total Inventory" value={`${stats?.totalInventory || 0}kg`} icon={Warehouse} trend={10} color="wheat" delay={0.1} />
-                            <MobileMetricCard title="Incoming Batches" value={stats?.incomingBatches || 0} icon={Truck} trend={0} color="sage" delay={0.2} />
-                            <MobileMetricCard title="Quality Passed" value={`${stats?.qualityScore || 0}%`} icon={ClipboardCheck} trend={2} color="sky" delay={0.3} />
-                            <MobileMetricCard title="Storage Used" value={`${stats?.storageUsed || 0}%`} icon={Package} trend={-5} color="terra" delay={0.4} />
+                            <MobileMetricCard title="Total Inventory" value={`${stats?.totalInventory || 0}kg`} icon={Warehouse} trend={0} color="wheat" delay={0.1} />
+                            <MobileMetricCard title="Incoming" value={stats?.incomingBatches || 0} icon={Truck} trend={0} color="sage" delay={0.2} />
+                            <MobileMetricCard title="Purchase Requests" value={stats?.pendingPOs || 0} icon={Mail} trend={0} color="sky" delay={0.3} onClick={() => navigate('/distributor/purchase-orders')} />
+                            <MobileMetricCard title="Storage Used" value={`${stats?.storageUsed || 0}%`} icon={Package} trend={0} color="terra" delay={0.4} />
                         </>
                     ) : (
                         <>
-                            <MetricCard title="Total Inventory" value={stats?.totalInventory || 0} unit=" kg" icon={Warehouse} trend={10} color="wheat" delay={0.1} />
-                            <MetricCard title="Incoming Batches" value={stats?.incomingBatches || 0} icon={Truck} trend={0} color="sage" delay={0.2} />
-                            <MetricCard title="Quality Passed" value={stats?.qualityScore || 0} unit="%" icon={ClipboardCheck} trend={2} color="sky" delay={0.3} />
-                            <MetricCard title="Storage Used" value={stats?.storageUsed || 0} unit="%" icon={Package} trend={-5} color="terra" delay={0.4} />
+                            <MetricCard title="Total Inventory" value={stats?.totalInventory || 0} unit=" kg" icon={Warehouse} trend={0} color="wheat" delay={0.1} />
+                            <MetricCard title="Incoming Shipments" value={stats?.incomingBatches || 0} icon={Truck} trend={0} color="sage" delay={0.2} />
+                            <MetricCard title="Purchase Requests" value={stats?.pendingPOs || 0} icon={Mail} trend={0} color="sky" delay={0.3} onClick={() => navigate('/distributor/purchase-orders')} />
+                            <MetricCard title="Storage Used" value={stats?.storageUsed || 0} unit="%" icon={Package} trend={0} color="terra" delay={0.4} />
                         </>
                     )}
                 </div>
@@ -166,17 +239,6 @@ const DistributorDashboard = () => {
                                 />
                             </AreaChart>
                         </ChartCardComponent>
-
-                        {/* Quality Metrics */}
-                        <ChartCardComponent title="Quality Control Metrics" subtitle="Pass vs Fail by category" height={barChartHeight}>
-                            <BarChart data={qualityMetricsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <XAxis dataKey="category" {...chartTheme.axis} tick={{ fontSize: isMobile ? 10 : 12 }} />
-                                <YAxis {...chartTheme.axis} tick={{ fontSize: isMobile ? 10 : 12 }} />
-                                <Tooltip {...chartTheme.tooltip} />
-                                <Bar dataKey="passed" fill={chartTheme.colors.sage[0]} radius={[4, 4, 0, 0]} name="Passed" />
-                                <Bar dataKey="failed" fill={chartTheme.colors.terra[0]} radius={[4, 4, 0, 0]} name="Failed" />
-                            </BarChart>
-                        </ChartCardComponent>
                     </div>
 
                     {/* Side Charts Column */}
@@ -207,20 +269,78 @@ const DistributorDashboard = () => {
                             </div>
                         </ChartCardComponent>
 
-                        {/* Warehouse Zones - Keeping static for now as we don't have zone data in backend yet */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                            <h3 className="font-semibold text-slate-800 mb-4">Warehouse Zones</h3>
-                            <div className="space-y-4">
-                                <UtilizationBar label="Zone A (Cold)" percent={92} color="bg-sky-400" />
-                                <UtilizationBar label="Zone B (Dry)" percent={65} color="bg-wheat-400" />
-                                <UtilizationBar label="Silos (Grains)" percent={45} color="bg-sage-400" />
-                            </div>
+                {/* Warehouse Zones - Calculated from real data */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-800 mb-4">Warehouse Zones</h3>
+                    <div className="space-y-4">
+                        {(() => {
+                            // Calculate Zone Stats
+                            const totalCap = stats?.capacity || 5000;
+                            const zoneCaps = {
+                                'Zone A (Cold)': totalCap * 0.3, // 30% of total
+                                'Zone B (Dry)': totalCap * 0.4,  // 40% of total
+                                'Zone C (Silos)': totalCap * 0.3 // 30% of total
+                            };
+                            const zoneUsage = { 'Zone A (Cold)': 0, 'Zone B (Dry)': 0, 'Zone C (Silos)': 0 };
+
+                            inventory.forEach(item => {
+                                if (item.warehouse?.includes('Zone A')) zoneUsage['Zone A (Cold)'] += parseFloat(item.stock) || 0;
+                                else if (item.warehouse?.includes('Zone C')) zoneUsage['Zone C (Silos)'] += parseFloat(item.stock) || 0;
+                                else zoneUsage['Zone B (Dry)'] += parseFloat(item.stock) || 0;
+                            });
+
+                            return (
+                                <>
+                                    <UtilizationBar 
+                                        label="Zone A (Cold)" 
+                                        percent={Math.min(Math.round((zoneUsage['Zone A (Cold)'] / zoneCaps['Zone A (Cold)']) * 100), 100)} 
+                                        color="bg-sky-400" 
+                                    />
+                                    <UtilizationBar 
+                                        label="Zone B (General)" 
+                                        percent={Math.min(Math.round((zoneUsage['Zone B (Dry)'] / zoneCaps['Zone B (Dry)']) * 100), 100)} 
+                                        color="bg-wheat-400" 
+                                    />
+                                    <UtilizationBar 
+                                        label="Zone C (Silos)" 
+                                        percent={Math.min(Math.round((zoneUsage['Zone C (Silos)'] / zoneCaps['Zone C (Silos)']) * 100), 100)} 
+                                        color="bg-sage-400" 
+                                    />
+                                </>
+                            );
+                        })()}
+                    </div>
+                </div>
+                    </div>
+                </div>
+
+                {/* Purchase Requests Table */}
+                <div className="animate-in transition-all" style={{ animationDelay: '0.4s' }}>
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-base md:text-lg font-display font-semibold text-slate-700">Recent Purchase Requests</h2>
+                            <span className="bg-sky-100 text-sky-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">New</span>
                         </div>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/distributor/purchase-orders')}>View All</Button>
+                    </div>
+                    <div className={isMobile ? 'overflow-x-auto' : ''}>
+                        {recentPOs.length > 0 ? (
+                            <DataTable
+                                columns={poColumns}
+                                data={recentPOs}
+                                onRowClick={(row) => navigate('/distributor/purchase-orders')}
+                            />
+                        ) : (
+                            <div className="text-center py-10 bg-white rounded-xl border border-dashed border-slate-300">
+                                <Mail className="mx-auto text-slate-300 mb-2" size={48} />
+                                <p className="text-slate-500">No pending requests</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Current Inventory Table */}
-                <div className="animate-in transition-all" style={{ animationDelay: '0.4s' }}>
+                <div className="animate-in transition-all" style={{ animationDelay: '0.5s' }}>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-base md:text-lg font-display font-semibold text-slate-700">Current Inventory</h2>
                         {!isMobile && (

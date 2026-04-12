@@ -54,6 +54,22 @@ export const api = {
             method: 'PUT',
             body: JSON.stringify({ profile: profileData }),
         }),
+
+        uploadFile: async (formData) => {
+            const url = `${API_BASE_URL}/upload/certificate`;
+            const token = localStorage.getItem('token');
+            const config = {
+                method: 'POST',
+                body: formData,
+            };
+            if (token) {
+                config.headers = { 'Authorization': `Bearer ${token}` };
+            }
+            const response = await fetch(url, config);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'File upload failed');
+            return data;
+        },
     },
 
     // Farmer APIs
@@ -88,6 +104,52 @@ export const api = {
         getInventory: () => api.request('/distributor/inventory'),
         getIncoming: () => api.request('/distributor/incoming'),
         getAnalytics: () => api.request('/distributor/analytics'),
+        getWarehouses: () => api.request('/distributor/warehouses'),
+        createWarehouse: (data) => api.request('/distributor/warehouses', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        getIncomingPOs: () => api.request('/distributor/purchase-orders'),
+        acceptPO: (id) => api.request(`/distributor/purchase-orders/${id}/accept`, {
+            method: 'PUT'
+        }),
+        rejectPO: (id, reason) => api.request(`/distributor/purchase-orders/${id}/reject`, {
+            method: 'PUT',
+            body: JSON.stringify({ reason })
+        }),
+        publishInventory: (id, available) => api.request(`/distributor/inventory/${id}/publish`, {
+            method: 'PUT',
+            body: JSON.stringify({ available })
+        }),
+    },
+
+    // Retailer APIs
+    retailer: {
+        getStats: () => api.request('/retailer/stats'),
+        getProducts: () => api.request('/retailer/products'),
+        acquireBatch: (batchId) => api.request('/retailer/acquire', {
+            method: 'POST',
+            body: JSON.stringify({ batchId })
+        }),
+        markAvailable: (id) => api.request(`/retailer/${id}/available`, {
+            method: 'PUT'
+        }),
+        getSales: () => api.request('/retailer/sales'),
+        recordSale: (saleData) => api.request('/retailer/sales', {
+            method: 'POST',
+            body: JSON.stringify(saleData)
+        }),
+        getMarketplace: () => api.request('/retailer/marketplace'),
+        createPurchaseOrder: (data) => api.request('/retailer/purchase-orders', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        getPurchaseOrders: () => api.request('/retailer/purchase-orders')
+    },
+
+    // Transporter APIs
+    transporter: {
+        getStats: () => api.request('/transporter/stats'),
     },
 
     // Shipment APIs
@@ -163,6 +225,11 @@ export const api = {
         }),
         getStatus: () => api.request('/drivers/me/status'),
     },
+
+    // Public APIs
+    public: {
+        getTraceData: (batchId) => fetch(`${API_BASE_URL}/public/trace/${batchId}`).then(res => res.json())
+    }
 };
 
 // Auth helper functions

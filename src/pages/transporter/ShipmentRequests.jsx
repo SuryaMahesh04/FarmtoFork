@@ -17,6 +17,15 @@ const ShipmentRequests = () => {
     const [requests, setRequests] = useState([]);
     const [drivers, setDrivers] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Helper to format location labels (Village/City, District)
+    const formatLocation = (user) => {
+        if (!user || !user.profile) return 'Unknown Location';
+        const p = user.profile;
+        const primary = p.village || p.city || p.storeName || p.companyName || 'Location';
+        const secondary = p.district || p.state || '';
+        return secondary ? `${primary}, ${secondary}` : primary;
+    };
 
     useEffect(() => {
         loadData();
@@ -96,8 +105,10 @@ const ShipmentRequests = () => {
         const matchesSearch =
             (req.shipmentId?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
             (req.batch?.crop?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (req.origin?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (req.destination?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+            (formatLocation(req.farmer).toLowerCase()).includes(searchQuery.toLowerCase()) ||
+            (formatLocation(req.distributor).toLowerCase()).includes(searchQuery.toLowerCase()) ||
+            (req.farmer?.profile?.fullName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+            (req.distributor?.profile?.companyName?.toLowerCase() || '').includes(searchQuery.toLowerCase());
 
         return matchesTab && matchesSearch;
     });
@@ -178,9 +189,9 @@ const ShipmentRequests = () => {
 
                                             <div className="flex items-center gap-2 text-xs text-slate-600 mb-2">
                                                 <MapPin size={14} className="text-slate-400" />
-                                                <span className="truncate max-w-[100px]">{req.origin || req.farmer?.profile?.city}</span>
+                                                <span className="truncate max-w-[100px]">{formatLocation(req.farmer)}</span>
                                                 <span className="text-slate-300">→</span>
-                                                <span className="truncate max-w-[100px]">{req.destination || req.distributor?.profile?.city}</span>
+                                                <span className="truncate max-w-[100px]">{formatLocation(req.distributor)}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -214,21 +225,30 @@ const ShipmentRequests = () => {
                                         className="w-full h-full"
                                         // Origin: Try coordinates first, then city/address string
                                         origin={selectedRequest.farmer?.profile?.address?.coordinates}
-                                        originLabel={selectedRequest.origin || selectedRequest.farmer?.profile?.city || 'Farm Location'}
+                                        originLabel={formatLocation(selectedRequest.farmer)}
 
                                         // Destination: Try coordinates first, then city/address string
                                         destination={selectedRequest.distributor?.profile?.address?.coordinates}
-                                        destinationLabel={selectedRequest.destination || selectedRequest.distributor?.profile?.city || 'Distributor Location'}
+                                        destinationLabel={formatLocation(selectedRequest.distributor)}
 
                                         onDistanceCalculated={(dist) => setCalculatedDistance(dist)}
                                     />
                                     {!isMobile && (
-                                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm z-[400] pointer-events-none">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Origin</p>
-                                            <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
-                                                <MapPin size={12} className="text-emerald-500" />
-                                                {selectedRequest.origin || selectedRequest.farmer?.profile?.city || 'Unknown Location'}
-                                            </p>
+                                        <div className="flex flex-col gap-2 absolute top-4 left-4 z-[400] pointer-events-none">
+                                            <div className="bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Origin</p>
+                                                <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                                                    <MapPin size={12} className="text-emerald-500" />
+                                                    {formatLocation(selectedRequest.farmer)}
+                                                </p>
+                                            </div>
+                                            <div className="bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Destination</p>
+                                                <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                                                    <MapPin size={12} className="text-blue-500" />
+                                                    {formatLocation(selectedRequest.distributor)}
+                                                </p>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -274,17 +294,38 @@ const ShipmentRequests = () => {
                                     </div>
 
                                     {/* Details Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                                         <div className="space-y-4">
                                             <div className="flex items-start gap-3">
                                                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                                                     <User size={18} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Farmer Details</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Origin (Farmer)</p>
                                                     <p className="font-semibold text-slate-800">{selectedRequest.farmer?.profile?.fullName}</p>
-                                                    <p className="text-sm text-slate-500 flex items-center gap-1">
-                                                        <Phone size={12} /> {selectedRequest.farmer?.profile?.mobile}
+                                                    <p className="text-[11px] text-slate-500 flex items-center gap-1 mb-1">
+                                                        <Phone size={11} /> {selectedRequest.farmer?.profile?.mobile}
+                                                    </p>
+                                                    <p className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded inline-block">
+                                                        {formatLocation(selectedRequest.farmer)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                                    <MapPin size={18} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Destination (Distributor)</p>
+                                                    <p className="font-semibold text-slate-800">{selectedRequest.distributor?.profile?.companyName || selectedRequest.distributor?.profile?.fullName}</p>
+                                                    <p className="text-[11px] text-slate-500 flex items-center gap-1 mb-1">
+                                                        Store: {selectedRequest.distributor?.profile?.city}
+                                                    </p>
+                                                    <p className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded inline-block">
+                                                        {formatLocation(selectedRequest.distributor)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -296,12 +337,12 @@ const ShipmentRequests = () => {
                                                     <Truck size={18} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Logistics</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Metrics</p>
                                                     <p className="font-semibold text-slate-800">
                                                         {calculatedDistance ? `${calculatedDistance} km` : 'Calculating...'}
                                                     </p>
-                                                    <p className="text-sm text-slate-500">
-                                                        Est. Time: {calculatedDistance ? `${Math.ceil(calculatedDistance / 50)} hrs` : 'Pending'}
+                                                    <p className="text-[11px] text-slate-500">
+                                                        Est. Duration: {calculatedDistance ? `${Math.ceil(calculatedDistance / 50)} hrs` : 'N/A'}
                                                     </p>
                                                 </div>
                                             </div>

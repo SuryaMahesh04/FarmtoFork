@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const encryptedFieldSchema = {
+    iv: String,
+    authTag: String,
+    ciphertext: String
+};
+
 const batchSchema = new mongoose.Schema({
     batchId: {
         type: String,
@@ -19,7 +25,7 @@ const batchSchema = new mongoose.Schema({
     },
     variety: String,
     quantity: {
-        type: Number,
+        type: encryptedFieldSchema,
         required: true
     },
     unit: {
@@ -32,7 +38,7 @@ const batchSchema = new mongoose.Schema({
     },
 
     // Pricing
-    pricePerUnit: Number,
+    pricePerUnit: encryptedFieldSchema,
     totalRevenue: Number,
 
     // Quality
@@ -53,16 +59,27 @@ const batchSchema = new mongoose.Schema({
         village: String,
         district: String,
         state: String,
-        gpsCoordinates: {
-            lat: Number,
-            lng: Number
-        }
+        gpsCoordinates: encryptedFieldSchema
     },
 
     // QR Code Status
     qrGenerated: {
         type: Boolean,
         default: false
+    },
+
+    // Retail phase tracking
+    retailerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    availableForSale: {
+        type: Boolean,
+        default: false
+    },
+    scanCount: {
+        type: Number,
+        default: 0
     },
 
     // Simulated Blockchain
@@ -98,14 +115,29 @@ const batchSchema = new mongoose.Schema({
     }],
 
     // Metadata
-    notes: String,
-    images: [String]
+    notes: encryptedFieldSchema,
+    images: [String],
+
+    // Security & Immutability
+    isEncrypted: {
+        type: Boolean,
+        default: true
+    },
+    previousRecordHash: {
+        type: String,
+        default: '0'
+    },
+    documentSignature: {
+        type: String
+    },
+    cropHash: {
+        type: String
+    }
 }, {
     timestamps: true
 });
 
 // Indexes for performance
-batchSchema.index({ batchId: 1 });
 batchSchema.index({ farmerId: 1 });
 batchSchema.index({ status: 1 });
 batchSchema.index({ harvestDate: -1 });

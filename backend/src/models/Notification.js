@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['shipment_request', 'shipment_accepted', 'shipment_rejected', 'shipment_assignment', 'driver_arrival', 'pickup_completed', 'in_transit', 'delivered', 'general'],
+        enum: ['shipment_request', 'shipment_accepted', 'shipment_rejected', 'shipment_assignment', 'driver_arrival', 'pickup_completed', 'in_transit', 'delivered', 'purchase_order', 'po_update', 'general'],
         required: true
     },
     message: {
@@ -25,7 +25,7 @@ const notificationSchema = new mongoose.Schema({
     },
     relatedModel: {
         type: String,
-        enum: ['Shipment', 'Batch', 'Order'],
+        enum: ['Shipment', 'Batch', 'Order', 'PurchaseOrder'],
         default: 'Shipment'
     },
     isRead: {

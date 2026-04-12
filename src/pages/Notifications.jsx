@@ -21,7 +21,7 @@ const Notifications = () => {
     const fetchNotifications = async () => {
         try {
             setLoading(true);
-            const minLoadTime = 3400;
+            const minLoadTime = 1000;
             const [response] = await Promise.all([
                 api.notification.getAll(),
                 new Promise(resolve => setTimeout(resolve, minLoadTime))

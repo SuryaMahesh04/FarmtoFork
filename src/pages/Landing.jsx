@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sprout, Truck, Store, User, Database, Search, Shield, Leaf, BarChart3, Globe, Award, ArrowRight, CheckCircle2, Menu, X, Zap, Lock, Clock, TrendingUp, Users, Package, Star, ChevronDown } from 'lucide-react';
+import { Sprout, Truck, Store, User, Database, Search, Shield, Leaf, BarChart3, Globe, Award, ArrowRight, CheckCircle2, Menu, X, Zap, Lock, Clock, TrendingUp, Users, Package, Star, ChevronDown, Twitter, Linkedin, Instagram } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/ui/Button';
 import heroImage from '../assets/image.png';
@@ -204,8 +204,7 @@ const Landing = () => {
                             alt="Organic farm field"
                             className="w-full max-w-[1500px] mx-auto object-contain transform scale-125 lg:scale-110 origin-bottom"
                         />
-                        {/* Gradient Overlay to blend bottom of image */}
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[150%] h-32 bg-gradient-to-t from-white via-white/80 to-transparent"></div>
+
                     </motion.div>
                 )}
             </div>
@@ -489,26 +488,98 @@ const Landing = () => {
             </div>
 
             {/* Footer */}
-            <footer className="bg-slate-900 text-slate-400 py-8 md:py-12 border-t border-slate-800">
+            <footer className="bg-slate-900 pt-16 pb-8 border-t border-slate-800">
                 <div className="container mx-auto px-4 md:px-6">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                        <Link to="/" className="flex items-center gap-2 md:gap-3 mb-2 md:mb-0">
-                            <img
-                                src={logo}
-                                alt="Farm2Fork Logo"
-                                className="h-12 md:h-16 w-auto object-contain brightness-0 invert"
-                            />
-                            <span className="font-display font-bold text-xl md:text-2xl text-white">
-                                Farm<span className="text-emerald-400">2</span>Fork
-                            </span>
-                        </Link>
-                        <div className="flex gap-6 md:gap-8 text-sm font-medium">
-                            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-                            <a href="#" className="hover:text-white transition-colors">Terms</a>
-                            <a href="#" className="hover:text-white transition-colors">Contact</a>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+                        {/* Brand Column */}
+                        <div className="space-y-6">
+                            <Link to="/" className="flex items-center gap-2">
+                                <img
+                                    src={logo}
+                                    alt="Farm2Fork Logo"
+                                    className="h-10 w-auto brightness-0 invert"
+                                />
+                                <span className="font-display font-bold text-xl text-white">
+                                    Farm<span className="text-emerald-500">2</span>Fork
+                                </span>
+                            </Link>
+                            <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
+                                Revolutionizing agriculture through blockchain transparency. From farm to table, we ensure every harvest is verified, trusted, and fair.
+                            </p>
+                            <div className="flex gap-4">
+                                <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-emerald-600 hover:text-white transition-all transform hover:-translate-y-1">
+                                    <Twitter size={18} />
+                                </a>
+                                <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all transform hover:-translate-y-1">
+                                    <Linkedin size={18} />
+                                </a>
+                                <a href="#" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-pink-600 hover:text-white transition-all transform hover:-translate-y-1">
+                                    <Instagram size={18} />
+                                </a>
+                            </div>
                         </div>
-                        <div className="text-xs md:text-sm mt-2 md:mt-0">
-                            &copy; 2024 AgriChain Inc.
+
+                        {/* Platform Links */}
+                        <div>
+                            <h4 className="font-bold text-white mb-6">Platform</h4>
+                            <ul className="space-y-4 text-sm text-slate-400">
+                                <li>
+                                    <a href="#features" className="hover:text-emerald-400 transition-colors flex items-center gap-2">
+                                        Features
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#roles" className="hover:text-emerald-400 transition-colors flex items-center gap-2">
+                                        Solutions
+                                    </a>
+                                </li>
+                                <li>
+                                    <Link to="/trace" className="hover:text-emerald-400 transition-colors flex items-center gap-2">
+                                        Traceability Engine
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/login" className="hover:text-emerald-400 transition-colors flex items-center gap-2">
+                                        Supply Chain Portal
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* Company Links */}
+                        <div>
+                            <h4 className="font-bold text-white mb-6">Company</h4>
+                            <ul className="space-y-4 text-sm text-slate-400">
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">About Us</a></li>
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Careers</a></li>
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Blog</a></li>
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Press Kit</a></li>
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Contact</a></li>
+                            </ul>
+                        </div>
+
+                        {/* Resources Links */}
+                        <div>
+                            <h4 className="font-bold text-white mb-6">Resources</h4>
+                            <ul className="space-y-4 text-sm text-slate-400">
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Documentation</a></li>
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Privacy Policy</a></li>
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Terms of Service</a></li>
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Cookie Policy</a></li>
+                                <li><a href="#" className="hover:text-emerald-400 transition-colors flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    System Status
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p className="text-slate-500 text-sm">
+                            &copy; {new Date().getFullYear()} Farm2Fork Inc. All rights reserved.
+                        </p>
+                        <div className="flex gap-6 text-sm text-slate-500">
+                            <span>Made with 💚 for a sustainable future</span>
                         </div>
                     </div>
                 </div>

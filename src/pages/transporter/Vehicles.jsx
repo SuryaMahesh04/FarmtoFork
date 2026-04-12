@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Truck, Search, Filter, Plus, Phone, Star } from 'lucide-react';
+import useMediaQuery from '../../utils/useMediaQuery';
 import Button from '../../components/ui/Button';
 import AddVehicleModal from '../../components/transporter/AddVehicleModal';
 import VehicleFilterModal from '../../components/transporter/VehicleFilterModal';
@@ -128,9 +129,11 @@ const Vehicles = () => {
         return matchesTab && matchesSearch && matchesModal;
     });
 
+    const isMobile = useMediaQuery('(max-width: 768px)');
+
     return (
         <DashboardLayout role="transporter">
-            <div className="space-y-6">
+            <div className="space-y-6 pb-20 md:pb-0">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-display font-bold text-slate-800">My Vehicles</h1>
@@ -138,7 +141,7 @@ const Vehicles = () => {
                     </div>
                     <Button
                         icon={Plus}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 w-full md:w-auto"
                         onClick={() => setIsAddModalOpen(true)}
                     >
                         Add Vehicle
@@ -146,8 +149,8 @@ const Vehicles = () => {
                 </div>
 
                 {/* Filters and Search */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-2 rounded-xl sticky top-0 z-10 shadow-sm border border-slate-100">
-                    <div className="flex bg-slate-50/50 p-1.5 rounded-xl w-full md:w-auto overflow-x-auto gap-1 border border-slate-100">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-2 rounded-xl sticky top-0 md:static z-10 shadow-sm border border-slate-100">
+                    <div className="flex bg-slate-50/50 p-1.5 rounded-xl w-full md:w-auto overflow-x-auto gap-1 border border-slate-100 no-scrollbar">
                         {tabs.map(tab => {
                             const isActive = filter === tab;
                             const colors = {
@@ -161,7 +164,7 @@ const Vehicles = () => {
                                 <button
                                     key={tab}
                                     onClick={() => setFilter(tab)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2.5 ${isActive ? colors.active : 'text-slate-500 hover:text-slate-700'
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2.5 shrink-0 ${isActive ? colors.active : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
                                     {tab}
@@ -179,7 +182,7 @@ const Vehicles = () => {
                             <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search vehicle or driver..."
+                                placeholder="Search..."
                                 className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -191,18 +194,19 @@ const Vehicles = () => {
                                 }`}
                         >
                             <Filter size={18} />
-                            Filter
+                            <span className="hidden md:inline">Filter</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Vehicle List */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        <div className="col-span-12 md:col-span-4">Vehicle Profile</div>
-                        <div className="col-span-6 md:col-span-3">Assigned Driver</div>
-                        <div className="col-span-6 md:col-span-3">Assignment</div>
-                        <div className="col-span-6 md:col-span-2 text-right">Status</div>
+                    {/* Header - Hidden on Mobile */}
+                    <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <div className="col-span-4">Vehicle Profile</div>
+                        <div className="col-span-3">Assigned Driver</div>
+                        <div className="col-span-3">Assignment</div>
+                        <div className="col-span-2 text-right">Status</div>
                     </div>
 
                     <div className="divide-y divide-slate-100">
@@ -224,74 +228,94 @@ const Vehicles = () => {
                                 }) : null;
 
                                 return (
-                                    <div key={vehicle._id} className="grid grid-cols-12 gap-4 px-6 py-6 items-center hover:bg-slate-50/50 transition-colors group">
+                                    <div key={vehicle._id} className="relative p-4 md:px-6 md:py-6 hover:bg-slate-50/50 transition-colors group">
 
-                                        {/* Vehicle Profile */}
-                                        <div className="col-span-12 md:col-span-4 flex items-start gap-5">
-                                            <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
-                                                <Truck size={24} className="text-white" strokeWidth={1.5} />
-                                            </div>
-                                            <div className="flex flex-col pt-0.5">
-                                                <h3 className="font-display font-bold text-slate-800 text-lg leading-tight">
-                                                    {vehicle.name || `${vehicle.make} ${vehicle.model}`}
-                                                </h3>
-                                                <p className="font-medium text-slate-500 text-sm mt-0.5">{vehicle.type}</p>
-                                                <div className="flex items-center gap-1.5 mt-1.5 ml-0.5">
-                                                    <span className="text-xs text-slate-500 font-medium">{vehicle.registrationNumber}</span>
-                                                    <span className="text-[10px] text-slate-300">•</span>
-                                                    <span className="text-xs text-slate-500 font-medium">{vehicle.capacity}</span>
+                                        {/* Mobile Layout: Stacked with absolute positioning for status */}
+                                        <div className="flex flex-col md:grid md:grid-cols-12 gap-4">
+
+                                            {/* Vehicle Profile */}
+                                            <div className="md:col-span-4 flex items-start gap-4">
+                                                <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-800 flex items-center justify-center shadow-lg shadow-slate-200 shrink-0">
+                                                    <Truck size={isMobile ? 20 : 24} className="text-white" strokeWidth={1.5} />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <h3 className="font-display font-bold text-slate-800 text-base md:text-lg leading-tight">
+                                                        {vehicle.name || `${vehicle.make} ${vehicle.model}`}
+                                                    </h3>
+                                                    <p className="font-medium text-slate-500 text-xs md:text-sm mt-0.5">{vehicle.type}</p>
+
+                                                    {isMobile && (
+                                                        <span className={`mt-2 inline-flex w-fit px-2 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wide ${getStatusColor(vehicle.status)}`}>
+                                                            {vehicle.status}
+                                                        </span>
+                                                    )}
+
+                                                    <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
+                                                        <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 border border-slate-200">{vehicle.registrationNumber}</span>
+                                                        <span className="text-[10px] text-slate-300">•</span>
+                                                        <span className="font-medium">{vehicle.capacity}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Assigned Driver */}
-                                        <div className="col-span-6 md:col-span-3 flex items-center gap-3 pl-2">
-                                            {assignedDriver ? (
-                                                <>
-                                                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm bg-indigo-50 text-indigo-600 uppercase">
-                                                        {assignedDriver.fullName?.charAt(0)}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <p className="font-bold text-slate-800 text-sm leading-tight">
-                                                            {assignedDriver.fullName}
-                                                        </p>
-                                                        <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium mt-1">
-                                                            <Phone size={10} />
-                                                            {assignedDriver.phone}
+                                            {/* Status - Desktop Only Position */}
+                                            <div className="hidden md:flex md:col-span-2 md:col-start-11 justify-end items-center">
+                                                <span className={`px-4 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-sm uppercase tracking-wide ${getStatusColor(vehicle.status)}`}>
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                                                    {vehicle.status}
+                                                </span>
+                                            </div>
+
+                                            {/* Info Grid for Mobile / Columns for Desktop */}
+                                            <div className="flex flex-col gap-3 mt-2 md:mt-0 md:col-span-6 md:col-start-5 md:grid md:grid-cols-6 md:gap-4 md:items-center w-full">
+
+                                                {/* Assigned Driver */}
+                                                <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 md:p-0 md:bg-transparent rounded-lg md:rounded-none border border-slate-100 md:border-none">
+                                                    {assignedDriver ? (
+                                                        <>
+                                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center font-bold text-xs md:text-sm bg-indigo-50 text-indigo-600 uppercase shrink-0">
+                                                                {assignedDriver.fullName?.charAt(0)}
+                                                            </div>
+                                                            <div className="flex flex-col min-w-0">
+                                                                <p className="text-xs text-slate-400 font-bold uppercase md:hidden mb-0.5">Driver</p>
+                                                                <p className="font-bold text-slate-800 text-sm leading-tight truncate">
+                                                                    {assignedDriver.fullName}
+                                                                </p>
+                                                                <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                                                                    <Phone size={10} />
+                                                                    {assignedDriver.phone}
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-sm text-slate-400 italic px-2">No Driver Assigned</span>
+                                                    )}
+                                                </div>
+
+                                                {/* Assignment */}
+                                                <div className="md:col-span-3">
+                                                    {activeAssignment ? (
+                                                        <div className="bg-blue-50/80 border border-blue-100 rounded-lg px-4 py-2 md:py-3 cursor-pointer hover:bg-blue-100/80 transition-colors">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <p className="text-[10px] font-bold text-blue-700 uppercase">{activeAssignment.status.replace('_', ' ')}</p>
+                                                                {isMobile && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>}
+                                                            </div>
+                                                            <p className="text-xs text-slate-600 truncate flex items-center gap-1">
+                                                                <span className="text-slate-400">To:</span>
+                                                                <span className="font-medium text-slate-800">{activeAssignment.distributor?.profile?.city || 'Distributor'}</span>
+                                                            </p>
                                                         </div>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <span className="text-sm text-slate-400 italic">No Driver Assigned</span>
-                                            )}
-                                        </div>
-
-                                        {/* Assignment */}
-                                        <div className="col-span-12 md:col-span-3 my-2 md:my-0">
-                                            {activeAssignment ? (
-                                                <div className="bg-blue-50/80 border border-blue-100 rounded-lg px-4 py-3">
-                                                    <p className="text-xs font-bold text-blue-700 uppercase mb-1">{activeAssignment.status.replace('_', ' ')}</p>
-                                                    <p className="text-xs text-slate-600 truncate">
-                                                        To: {activeAssignment.distributor?.profile?.city || 'Distributor'}
-                                                    </p>
+                                                    ) : (
+                                                        <div className="bg-slate-50/80 border border-slate-100 rounded-lg px-4 py-3 text-center md:h-full md:flex md:items-center md:justify-center">
+                                                            <span className="text-sm text-slate-500 font-medium italic">
+                                                                {(vehicle.status === 'Available' && !assignedDriver) ? 'Unassigned' : 'Ready'}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <div className="bg-slate-50/80 border border-slate-100 rounded-lg px-4 py-3 text-center">
-                                                    <span className="text-sm text-slate-500 font-medium italic">
-                                                        {(vehicle.status === 'Available' && !assignedDriver) ? 'Unassigned' : 'Ready'}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
+                                            </div>
 
-                                        {/* Status */}
-                                        <div className="col-span-6 md:col-span-2 flex justify-end">
-                                            <span className={`px-4 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-sm uppercase tracking-wide ${getStatusColor(vehicle.status)}`}>
-                                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-                                                {vehicle.status}
-                                            </span>
                                         </div>
-
                                     </div>
                                 )
                             })

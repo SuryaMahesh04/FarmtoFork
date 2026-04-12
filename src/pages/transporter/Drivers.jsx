@@ -248,6 +248,7 @@ const Drivers = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={handleAddDriver}
+                vehicles={vehicles}
             />
 
             <DriverCredentialsModal

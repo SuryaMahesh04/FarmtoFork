@@ -67,7 +67,7 @@ const SignupPage = () => {
             color: 'text-teal-600',
             bg: 'bg-teal-50',
             hover: 'hover:border-teal-200 hover:shadow-teal-500/10',
-            path: '/trace'
+            path: '/onboarding/consumer'
         }
     ];
 

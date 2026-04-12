@@ -1,22 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Filter } from 'lucide-react';
+import { Package, Search, Filter, Warehouse, Plus, X } from 'lucide-react';
 import { api } from '../../utils/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/ui/DataTable';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
+import FormInput from '../../components/ui/FormInput';
 import useMediaQuery from '../../utils/useMediaQuery';
 import Loader from '../../components/ui/Loader';
-
-// Dummy data replaced by real API call
+import toast from 'react-hot-toast';
 
 const Inventory = () => {
     const isMobile = useMediaQuery('(max-width: 768px)');
-    const [filterCategory, setFilterCategory] = useState('all');
+    const [selectedWarehouseId, setSelectedWarehouseId] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [inventory, setInventory] = useState([]);
+    const [warehouses, setWarehouses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // Warehouse Modal State
+    const [showWarehouseModal, setShowWarehouseModal] = useState(false);
+    const [warehouseForm, setWarehouseForm] = useState({
+        name: '',
+        capacity: '',
+        type: 'General',
+        location: {
+            city: '',
+            state: '',
+            address: '',
+            pincode: ''
+        }
+    });
 
     useEffect(() => {
         fetchInventory();
@@ -25,17 +40,17 @@ const Inventory = () => {
     const fetchInventory = async () => {
         try {
             setLoading(true);
-            const minLoadTime = 3400;
-            const [res] = await Promise.all([
+            const minLoadTime = 1000;
+            const [invRes, warRes] = await Promise.all([
                 api.distributor.getInventory(),
+                api.distributor.getWarehouses(),
                 new Promise(resolve => setTimeout(resolve, minLoadTime))
             ]);
-
-            if (res.success) {
-                setInventory(res.data);
-            } else {
-                setError('Failed to load inventory');
-            }
+    
+            if (invRes.success) setInventory(invRes.data);
+            if (warRes.success) setWarehouses(warRes.data);
+            
+            if (!invRes.success && !warRes.success) setError('Failed to load storage data');
         } catch (err) {
             console.error('Inventory fetch error:', err);
             setError('Failed to load inventory');
@@ -44,14 +59,47 @@ const Inventory = () => {
         }
     };
 
+    const togglePublish = async (id, currentStatus) => {
+        try {
+            const res = await api.distributor.publishInventory(id, !currentStatus);
+            if (res.success) {
+                toast.success(`Batch ${!currentStatus ? 'published to' : 'removed from'} marketplace`);
+                fetchInventory();
+            }
+        } catch (err) {
+            toast.error(err.message || 'Failed to update publishing status');
+        }
+    };
+
     const columns = [
         { header: 'Item Code', accessor: 'id' },
         { header: 'Product', accessor: 'item' },
-        { header: 'Category', accessor: 'category' }, // Note: Backend might not send category yet, need to handle graceful fallback or hide
+        { header: 'Category', accessor: 'category' },
         { header: 'Stock Level', accessor: 'stock' },
-        { header: 'Warehouse', accessor: 'warehouse' },
-        { header: 'Expiry', accessor: 'expiry' },
         { header: 'Status', accessor: 'status', render: (row) => <StatusBadge status={row.status} /> },
+        { 
+            header: 'Marketplace', 
+            accessor: 'availableForSale',
+            render: (row) => (
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                        onClick={() => togglePublish(row._id, row.availableForSale)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                            row.availableForSale ? 'bg-emerald-500' : 'bg-slate-200'
+                        }`}
+                    >
+                        <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                row.availableForSale ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                        />
+                    </button>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                        {row.availableForSale ? 'Live' : 'Hidden'}
+                    </span>
+                </div>
+            )
+        },
     ];
 
     // Fallback if category is missing in backend response
@@ -60,61 +108,88 @@ const Inventory = () => {
         category: item.category || 'Uncategorized' // or derive from crop type if available
     }));
 
-    const filteredInventory = safeInventory.filter(item => {
-        const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
+    const filteredInventory = inventory.filter(item => {
+        const matchesWarehouse = selectedWarehouseId === 'all' || 
+                                (item.warehouseId && item.warehouseId === selectedWarehouseId);
         const matchesSearch = (item.item || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (item.id || '').toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
+        return matchesWarehouse && matchesSearch;
     });
 
-    const categoryCounts = {
-        all: safeInventory.length,
-        Grains: safeInventory.filter(i => i.category === 'Grains').length,
-        Vegetables: safeInventory.filter(i => i.category === 'Vegetables').length,
-        Fruits: safeInventory.filter(i => i.category === 'Fruits').length,
-        Dairy: safeInventory.filter(i => i.category === 'Dairy').length
-    };
+    const warehouseTabs = [
+        { id: 'all', name: 'All Inventory', count: inventory.length },
+        ...warehouses.map(w => ({
+            id: w._id,
+            name: w.name,
+            count: inventory.filter(i => i.warehouseId === w._id).length
+        }))
+    ];
 
     if (loading) {
         return (
             <DashboardLayout role="distributor">
-                <Loader text="Loading inventory..." />
+                <Loader text="Loading inventory and facilities..." />
             </DashboardLayout>
         );
     }
 
+    const handleCreateWarehouse = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await api.distributor.createWarehouse(warehouseForm);
+            if (res.success) {
+                setShowWarehouseModal(false);
+                setWarehouseForm({
+                    name: '', capacity: '', type: 'General',
+                    location: { city: '', state: '', address: '', pincode: '' }
+                });
+                fetchInventory(); // Refresh to show new warehouse tab
+            }
+        } catch (err) {
+            console.error('Failed to create warehouse:', err);
+        }
+    };
+
     return (
         <DashboardLayout role="distributor">
             <div className="space-y-6">
-                <div className="animate-in">
-                    <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Inventory Management</h1>
-                    <p className="text-sm md:text-base text-slate-500">Track and manage warehouse stock</p>
+                <div className="flex justify-between items-start animate-in">
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-display font-bold text-slate-800">Inventory Management</h1>
+                        <p className="text-sm md:text-base text-slate-500">Track and manage warehouse stock</p>
+                    </div>
+                    <Button 
+                        icon={Warehouse} 
+                        variant="primary" 
+                        onClick={() => setShowWarehouseModal(true)}
+                    >
+                        Add Warehouse
+                    </Button>
                 </div>
 
-                {/* Category Filter */}
+                {/* Warehouse Filter Tabs */}
                 <div className={`${isMobile ? 'flex overflow-x-auto gap-2 pb-2' : 'flex gap-4'} animate-in`} style={{ animationDelay: '0.1s' }}>
-                    {[
-                        { key: 'all', label: 'All Items', count: categoryCounts.all },
-                        { key: 'Grains', label: 'Grains', count: categoryCounts.Grains },
-                        { key: 'Vegetables', label: 'Vegetables', count: categoryCounts.Vegetables },
-                        { key: 'Fruits', label: 'Fruits', count: categoryCounts.Fruits },
-                        { key: 'Dairy', label: 'Dairy', count: categoryCounts.Dairy }
-                    ].map(tab => (
+                    {warehouseTabs.map(tab => (
                         <button
-                            key={tab.key}
-                            onClick={() => setFilterCategory(tab.key)}
+                            key={tab.id}
+                            onClick={() => setSelectedWarehouseId(tab.id)}
                             className={`${isMobile ? 'px-4 py-2 text-sm whitespace-nowrap' : 'px-6 py-3'
-                                } rounded-lg font-medium transition-all ${filterCategory === tab.key
+                                } rounded-lg font-medium transition-all ${selectedWarehouseId === tab.id
                                     ? 'bg-amber-100 text-amber-800 shadow-sm'
                                     : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                                 }`}
                         >
-                            {tab.label}
-                            <span className={`ml-2 ${isMobile ? 'text-xs' : 'text-sm'} ${filterCategory === tab.key ? 'text-amber-600' : 'text-slate-400'}`}>
+                            {tab.name}
+                            <span className={`ml-2 ${isMobile ? 'text-xs' : 'text-sm'} ${selectedWarehouseId === tab.id ? 'text-amber-600' : 'text-slate-400'}`}>
                                 ({tab.count})
                             </span>
                         </button>
                     ))}
+                    {warehouses.length === 0 && selectedWarehouseId === 'all' && (
+                        <div className="flex items-center text-xs text-slate-400 bg-slate-50 px-4 py-2 rounded-lg border border-dashed border-slate-200">
+                             Click "Add Warehouse" to categorize your stock
+                        </div>
+                    )}
                 </div>
 
                 {/* Search Bar */}
@@ -156,6 +231,96 @@ const Inventory = () => {
                     )}
                 </div>
             </div>
+
+            {/* Add Warehouse Modal */}
+            {showWarehouseModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in transition-all">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in slide-in-from-bottom-4">
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                                    <Warehouse size={20} />
+                                </div>
+                                <h2 className="text-xl font-display font-bold text-slate-800">New Storage Facility</h2>
+                            </div>
+                            <button onClick={() => setShowWarehouseModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleCreateWarehouse} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormInput 
+                                    label="Warehouse Name" 
+                                    placeholder="main-warehouse-01" 
+                                    value={warehouseForm.name}
+                                    onChange={(e) => setWarehouseForm({...warehouseForm, name: e.target.value})}
+                                    required
+                                />
+                                <FormInput 
+                                    label="Total Capacity (kg)" 
+                                    type="number"
+                                    placeholder="5000" 
+                                    value={warehouseForm.capacity}
+                                    onChange={(e) => setWarehouseForm({...warehouseForm, capacity: e.target.value})}
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Facility Type</label>
+                                <select 
+                                    className="w-full px-4 py-3 rounded-xl border border-sage-200 focus:ring-2 focus:ring-sage-500/20 focus:border-sage-500 transition-all outline-none bg-white text-slate-700 font-medium"
+                                    value={warehouseForm.type}
+                                    onChange={(e) => setWarehouseForm({...warehouseForm, type: e.target.value})}
+                                >
+                                    <option value="Dry Warehouse">Ambient/Dry Warehouse</option>
+                                    <option value="Cold Storage">Cold Storage (Refrigerated)</option>
+                                    <option value="Frozen Storage">Frozen Storage (Deep Freeze)</option>
+                                    <option value="Climate Controlled">Climate Controlled (Humidity/Temp)</option>
+                                    <option value="Silo">Silo (Bulk Grains)</option>
+                                    <option value="Bonded">Bonded Warehouse (Customs)</option>
+                                    <option value="Distribution Center">Regional Distribution Center</option>
+                                    <option value="Cross-Dock">Cross-Docking Facility</option>
+                                    <option value="Hazardous">Hazardous/Chemical Storage</option>
+                                    <option value="Automated">Automated Storage (ASRS)</option>
+                                </select>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100 mt-4">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Location Details</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormInput 
+                                        label="City" 
+                                        value={warehouseForm.location.city}
+                                        onChange={(e) => setWarehouseForm({...warehouseForm, location: {...warehouseForm.location, city: e.target.value}})}
+                                        required
+                                    />
+                                    <FormInput 
+                                        label="Pincode" 
+                                        value={warehouseForm.location.pincode}
+                                        onChange={(e) => setWarehouseForm({...warehouseForm, location: {...warehouseForm.location, pincode: e.target.value}})}
+                                        required
+                                    />
+                                </div>
+                                <div className="mt-4">
+                                    <FormInput 
+                                        label="Full Address" 
+                                        value={warehouseForm.location.address}
+                                        onChange={(e) => setWarehouseForm({...warehouseForm, location: {...warehouseForm.location, address: e.target.value}})}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-6 border-t border-slate-100">
+                                <Button className="flex-1" variant="ghost" type="button" onClick={() => setShowWarehouseModal(false)}>Cancel</Button>
+                                <Button className="flex-1" variant="primary" type="submit" icon={Plus}>Register Warehouse</Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 };

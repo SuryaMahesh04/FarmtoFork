@@ -1,7 +1,7 @@
 import React from 'react';
 import { ResponsiveContainer } from 'recharts';
 
-const ChartCard = ({ title, subtitle, children, height = 300, action }) => {
+const ChartCard = ({ title, subtitle, children, height = 300, action, footer }) => {
     return (
         <div className="glass-panel p-6 rounded-2xl shadow-sm flex flex-col">
             <div className="flex justify-between items-start mb-6">
@@ -19,6 +19,12 @@ const ChartCard = ({ title, subtitle, children, height = 300, action }) => {
                     {children}
                 </ResponsiveContainer>
             </div>
+
+            {footer && (
+                <div className="mt-4 pt-4 border-t border-slate-50">
+                    {footer}
+                </div>
+            )}
         </div>
     );
 };

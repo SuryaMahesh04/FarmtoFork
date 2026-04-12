@@ -23,13 +23,16 @@ const farmerRoutes = require('./routes/farmer');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/farmer', farmerRoutes);
+app.use('/api/transporter', require('./routes/transporter'));
 app.use('/api/distributor', require('./routes/distributor'));
+app.use('/api/retailer', require('./routes/retailer'));
 app.use('/api/shipments', require('./routes/shipment'));
 app.use('/api/drivers', require('./routes/drivers'));
 app.use('/api/vehicles', require('./routes/vehicles'));
 app.use('/api/notifications', require('./routes/notification'));
-
-// Health check route
+app.use('/api/upload', require('./routes/upload'));
+app.use('/api/public', require('./routes/public'));
+app.use('/api/admin', require('./routes/admin'));
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,

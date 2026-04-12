@@ -1,7 +1,7 @@
 import React from 'react';
 import { ResponsiveContainer } from 'recharts';
 
-const MobileChartCard = ({ title, subtitle, children, height = 250 }) => {
+const MobileChartCard = ({ title, subtitle, children, height = 250, footer }) => {
     return (
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
             {/* Header */}
@@ -18,6 +18,12 @@ const MobileChartCard = ({ title, subtitle, children, height = 250 }) => {
                     {children}
                 </ResponsiveContainer>
             </div>
+
+            {footer && (
+                <div className="mt-3 pt-3 border-t border-slate-50">
+                    {footer}
+                </div>
+            )}
         </div>
     );
 };

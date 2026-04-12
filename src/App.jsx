@@ -7,6 +7,7 @@ import FarmerOnboarding from './components/forms/farmer/FarmerOnboarding';
 import TransporterOnboarding from './components/forms/transporter/TransporterOnboarding';
 import DistributorOnboarding from './components/forms/distributor/DistributorOnboarding';
 import RetailerOnboarding from './components/forms/retailer/RetailerOnboarding';
+import ConsumerOnboarding from './components/forms/consumer/ConsumerOnboarding';
 
 import FarmerDashboard from './pages/farmer/FarmerDashboard';
 import BatchDetail from './pages/farmer/BatchDetail';
@@ -40,20 +41,37 @@ import RetailerDashboard from './pages/retailer/RetailerDashboard';
 import RetailerProducts from './pages/retailer/Products';
 import RetailerSales from './pages/retailer/Sales';
 import RetailerSettings from './pages/retailer/Settings';
+import RetailerMarketplace from './pages/retailer/Marketplace';
+import RetailerPurchaseOrders from './pages/retailer/PurchaseOrders';
+import RetailerConsumerView from './pages/retailer/ConsumerView';
+import DistributorPurchaseOrders from './pages/distributor/PurchaseOrders';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/Users';
 import AdminApprovals from './pages/admin/Approvals';
 import AdminPlatformStats from './pages/admin/PlatformStats';
 import AdminSettings from './pages/admin/Settings';
+import AdminBatches from './pages/admin/Batches';
+import AdminShipments from './pages/admin/ShipmentMonitor';
+import AdminFleet from './pages/admin/FleetHub';
+import AdminSupplyMap from './pages/admin/SupplyMap';
+import NetworkMap from './pages/NetworkMap';
+import ConsumerDashboard from './pages/consumer/ConsumerDashboard';
+import ConsumerHistory from './pages/consumer/ConsumerHistory';
 import TraceProduct from './pages/consumer/TraceProduct';
+import ConsumerFarms from './pages/consumer/ConsumerFarms';
+import ConsumerFavourite from './pages/consumer/ConsumerFavourite';
+import ConsumerAlerts from './pages/consumer/ConsumerAlerts';
 import Notifications from './pages/Notifications';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import DriverVehicle from './pages/driver/DriverVehicle';
 import DriverShipments from './pages/driver/DriverShipments';
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
     return (
         <Router>
+            <Toaster position="top-right" reverseOrder={false} />
             <ScrollToTop />
             <div className="min-h-screen relative overflow-hidden">
                 <Routes>
@@ -67,6 +85,7 @@ function App() {
                     <Route path="/onboarding/transporter" element={<TransporterOnboarding />} />
                     <Route path="/onboarding/distributor" element={<DistributorOnboarding />} />
                     <Route path="/onboarding/retailer" element={<RetailerOnboarding />} />
+                    <Route path="/onboarding/consumer" element={<ConsumerOnboarding />} />
 
                     {/* Dashboard Routes */}
                     <Route path="/farmer" element={<FarmerDashboard />} />
@@ -79,12 +98,14 @@ function App() {
                     <Route path="/farmer/create-shipment" element={<CreateShipment />} />
                     <Route path="/farmer/shipments" element={<Shipments />} />
                     <Route path="/farmer/my-farm" element={<MyFarm />} />
+                    <Route path="/farmer/map" element={<NetworkMap />} />
                     <Route path="/farmer/shipment/:shipmentId" element={<ShipmentDetail role="farmer" />} />
 
                     <Route path="/transporter" element={<TransporterDashboard />} />
                     <Route path="/transporter/requests" element={<ShipmentRequests />} />
                     <Route path="/transporter/vehicles" element={<TransporterVehicles />} />
                     <Route path="/transporter/fleet-map" element={<FleetMap />} />
+                    <Route path="/transporter/map" element={<NetworkMap />} />
                     <Route path="/transporter/shipments" element={<TransporterShipments />} />
                     <Route path="/transporter/drivers" element={<TransporterDrivers />} />
                     <Route path="/transporter/routes" element={<TransporterRoutes />} />
@@ -102,22 +123,36 @@ function App() {
                     <Route path="/distributor/shipments" element={<DistributorShipments />} />
                     <Route path="/distributor/inventory" element={<DistributorInventory />} />
                     <Route path="/distributor/incoming" element={<DistributorIncoming />} />
-                    <Route path="/distributor/quality" element={<DistributorQuality />} />
+                    <Route path="/distributor/map" element={<NetworkMap />} />
                     <Route path="/distributor/settings" element={<DistributorSettings />} />
                     <Route path="/distributor/shipment/:shipmentId" element={<ShipmentDetail role="distributor" />} />
+                    <Route path="/distributor/purchase-orders" element={<DistributorPurchaseOrders />} />
 
                     <Route path="/retailer" element={<RetailerDashboard />} />
                     <Route path="/retailer/products" element={<RetailerProducts />} />
+                    <Route path="/retailer/marketplace" element={<RetailerMarketplace />} />
+                    <Route path="/retailer/purchase-orders" element={<RetailerPurchaseOrders />} />
+                    <Route path="/retailer/consumer-preview/:id" element={<RetailerConsumerView />} />
                     <Route path="/retailer/sales" element={<RetailerSales />} />
+                    <Route path="/retailer/map" element={<NetworkMap />} />
                     <Route path="/retailer/settings" element={<RetailerSettings />} />
 
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/users" element={<AdminUsers />} />
                     <Route path="/admin/approvals" element={<AdminApprovals />} />
-                    <Route path="/admin/stats" element={<AdminPlatformStats />} />
+                    <Route path="/admin/analytics" element={<AdminPlatformStats />} />
+                    <Route path="/admin/batches" element={<AdminBatches />} />
+                    <Route path="/admin/shipments" element={<AdminShipments />} />
+                    <Route path="/admin/fleet" element={<AdminFleet />} />
+                    <Route path="/admin/map" element={<AdminSupplyMap />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />
 
-                    {/* Public Trace Route */}
+                    {/* Consumer / Public Routes (Guests) */}
+                    <Route path="/consumer" element={<ConsumerDashboard />} />
+                    <Route path="/consumer/history" element={<ConsumerHistory />} />
+                    <Route path="/consumer/farms" element={<ConsumerFarms />} />
+                    <Route path="/consumer/favourite" element={<ConsumerFavourite />} />
+                    <Route path="/consumer/alerts" element={<ConsumerAlerts />} />
                     <Route path="/trace/:batchId" element={<TraceProduct />} />
                     <Route path="/trace" element={<TraceProduct />} />
                 </Routes>

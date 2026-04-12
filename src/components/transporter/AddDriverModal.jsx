@@ -18,9 +18,9 @@ const AddDriverModal = ({ isOpen, onClose, onAdd, vehicles = [] }) => {
 
     const [errors, setErrors] = useState({});
 
-    // Filter available vehicles (not assigned or assigned to current driver if editing)
-    const availableVehicles = vehicles.filter(v =>
-        v.status === 'Available' || v.status === 'Maintenance'
+    // Filter available vehicles (not assigned to any driver)
+    const availableVehicles = vehicles.filter(v => 
+        !v.assignedDriver || v.assignedDriver === null
     );
 
     const validate = () => {

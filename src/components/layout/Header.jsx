@@ -2,45 +2,39 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Bell, User, ChevronDown, Package, Check, X as CloseIcon } from 'lucide-react';
 import logo from '../../assets/logo2.png';
-import NotificationPopover from './NotificationPopover';
-import { notificationStore } from '../../utils/notificationStore';
-import { authHelpers } from '../../utils/api';
+import { api, authHelpers } from '../../utils/api';
 
 const Header = ({ toggleSidebar, role, userName = "Surya Mahesh" }) => {
-    const user = authHelpers.getUser();
-    const displayName = user?.profile?.fullName || userName;
     const navigate = useNavigate();
+    const [user, setUser] = useState(authHelpers.getUser());
+    const displayName = user?.profile?.fullName || userName;
+
+    useEffect(() => {
+        const currentUser = authHelpers.getUser();
+        if (currentUser) setUser(currentUser);
+    }, []);
 
     // Notification State
     const [unreadCount, setUnreadCount] = useState(0);
-    const [showNotifications, setShowNotifications] = useState(false);
-    const notificationRef = useRef(null);
 
-    // Update badge count
+    // Fetch unread count from actual API
     useEffect(() => {
-        const updateCount = () => {
-             // Mock: Count 'pending' as unread
-             const count = notificationStore.getAll().filter(n => n.status === 'pending').length;
-             setUnreadCount(count);
+        const fetchUnreadCount = async () => {
+             if (!user) return; // Only fetch if logged in
+             try {
+                 const res = await api.notification.getAll();
+                 if (res.success) {
+                     setUnreadCount(res.unreadCount);
+                 }
+             } catch (error) {
+                 // Silently fail to not clutter console
+             }
         };
         
-        updateCount();
-        // Set up an interval or event listener if needed, for now just initial load + polling
-        const interval = setInterval(updateCount, 2000);
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 15000); // Polling every 15s
         return () => clearInterval(interval);
-    }, []);
-
-    // Close notifications when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-                setShowNotifications(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [user]);
 
     return (
         <header className="h-16 fixed top-0 left-0 right-0 z-40 glass-panel border-b border-sage-200 px-4 md:px-6 flex items-center justify-between transition-all duration-300">
@@ -72,10 +66,28 @@ const Header = ({ toggleSidebar, role, userName = "Surya Mahesh" }) => {
                 </div>
 
                 {/* Notifications */}
-                <div className="relative" ref={notificationRef}>
+                <div className="relative flex items-center">
+                    {/* Location Reminder for Distributors */}
+                    {role?.toLowerCase() === 'distributor' && (!user?.profile?.address?.coordinates?.lat || !user?.profile?.address?.coordinates?.lng) && (
+                        <div className="absolute right-full mr-6 top-1/2 -translate-y-1/2 flex items-center gap-3 bg-white border border-rose-100 shadow-2xl shadow-rose-500/20 rounded-xl px-4 py-2.5 whitespace-nowrap animate-bounce-slow z-[60]">
+                            <div className="flex flex-col">
+                                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest leading-none mb-1">Alert</p>
+                                <p className="text-xs font-bold text-slate-800">Assign Warehouse Location</p>
+                            </div>
+                            <button 
+                                onClick={() => navigate('/distributor/settings')}
+                                className="px-3 py-1.5 bg-rose-600 text-white text-[10px] font-bold rounded-lg hover:bg-rose-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+                            >
+                                Setup Now
+                            </button>
+                            {/* Pointer triangle */}
+                            <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-r border-t border-rose-100 rotate-45"></div>
+                        </div>
+                    )}
+
                     <button
-                        onClick={() => setShowNotifications(!showNotifications)}
-                        className={`p-2 rounded-full transition-all duration-200 relative ${showNotifications ? 'bg-emerald-50 text-emerald-600' : 'hover:bg-slate-100 text-slate-500'}`}
+                        onClick={() => navigate('/notifications')}
+                        className={`p-2 rounded-full transition-all duration-200 relative hover:bg-slate-100 text-slate-500`}
                     >
                         <Bell size={20} />
                         {unreadCount > 0 && (
@@ -84,11 +96,6 @@ const Header = ({ toggleSidebar, role, userName = "Surya Mahesh" }) => {
                             </span>
                         )}
                     </button>
-
-                    <NotificationPopover 
-                        isOpen={showNotifications} 
-                        onClose={() => setShowNotifications(false)} 
-                    />
                 </div>
 
                 {/* User Profile */}

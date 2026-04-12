@@ -9,12 +9,14 @@ import { api, authHelpers } from '../../utils/api';
 import { indiaStates, cropTypes, landTypes } from '../../data/indiaGeoData';
 
 import PlacesAutocomplete from '../../components/ui/PlacesAutocomplete';
+import LocationPickerModal from '../../components/ui/LocationPickerModal';
 
 const Settings = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [isMapOpen, setIsMapOpen] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
 
     const handleSignOut = () => {
@@ -57,7 +59,7 @@ const Settings = () => {
     const fetchProfile = async () => {
         try {
             setLoading(true);
-            const minLoadTime = 3400;
+            const minLoadTime = 1000;
             const [res] = await Promise.all([
                 api.auth.getMe(),
                 new Promise(resolve => setTimeout(resolve, minLoadTime))
@@ -250,9 +252,19 @@ const Settings = () => {
 
                                 {/* Location Section */}
                                 <section className="space-y-4">
-                                    <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                        <MapPin size={20} className="text-red-500" /> Farm Location
-                                    </h2>
+                                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                        <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                            <MapPin size={20} className="text-red-500" /> Farm Location
+                                        </h2>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setIsMapOpen(true)}
+                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-sage-600 bg-sage-50 border border-sage-100 hover:bg-sage-100 transition-all shadow-sm"
+                                        >
+                                            <MapPin size={14} />
+                                            Pin on Map
+                                        </button>
+                                    </div>
                                     <div className="space-y-4">
                                         <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100">
                                             Search for your farm location to enable precise navigation for transporters.
@@ -530,7 +542,29 @@ const Settings = () => {
                         )}
                     </div>
                 </div>
-            </div >
+            </div>
+
+            <LocationPickerModal
+                isOpen={isMapOpen}
+                onClose={() => setIsMapOpen(false)}
+                onConfirm={(locData) => {
+                    const { coordinates, address } = locData;
+                    setFormData(prev => ({
+                        ...prev,
+                        address: {
+                            ...prev.address,
+                            formattedAddress: address.formattedAddress,
+                            city: address.city,
+                            state: address.state,
+                            coordinates: coordinates
+                        },
+                        state: address.state || prev.state,
+                        district: address.city || prev.district,
+                        village: address.city || prev.village
+                    }));
+                }}
+                initialLocation={formData.address?.coordinates}
+            />
         </DashboardLayout >
     );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, CheckCircle2, Navigation, Activity, Plus, Search, Filter } from 'lucide-react';
+import { Truck, CheckCircle2, Navigation, Activity, Plus, Search, Filter, Users } from 'lucide-react';
 import {
     PieChart, Pie, Cell, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer
 } from 'recharts';
@@ -18,7 +18,7 @@ import AddVehicleModal from '../../components/transporter/AddVehicleModal';
 import AddShipmentModal from '../../components/transporter/AddShipmentModal';
 import { vehicleStore } from '../../utils/vehicleStore';
 import { shipmentStore } from '../../utils/shipmentStore';
-import { authHelpers } from '../../utils/api';
+import { api, authHelpers } from '../../utils/api';
 
 const TransporterDashboard = () => {
     const navigate = useNavigate();
@@ -32,88 +32,52 @@ const TransporterDashboard = () => {
 
     // Search State
     const [dashboardSearch, setDashboardSearch] = useState('');
+    const [loading, setLoading] = useState(true);
 
     // State for dashboard data
     const [stats, setStats] = useState({
         totalFleet: 0,
         completedShipments: 0,
-        totalDistance: 12500, // Mock initial state
-        efficiency: 92
+        activeShipments: 0,
+        totalDrivers: 0
     });
 
     const [recentShipments, setRecentShipments] = useState([]);
     const [monthlyData, setMonthlyData] = useState([]);
     const [utilizationData, setUtilizationData] = useState([]);
 
-    // Refresh Data Function
-    const refreshDashboardData = () => {
-        const vehicles = vehicleStore.getAll();
-        const shipments = shipmentStore.getAll();
-
-        // 1. Calculate Basic Stats
-        const completed = shipments.filter(s => s.status === 'Delivered').length;
-        const active = shipments.filter(s => ['On Route', 'In Transit'].includes(s.status)).length;
-        const fleetSize = vehicles.length;
-
-        // Mock Calculations for demo purposes
-        const estimatedDistance = completed * 150 + 12000;
-        const calculatedEfficiency = 90 + (Math.random() * 5);
-
-        setStats({
-            totalFleet: fleetSize,
-            completedShipments: completed,
-            totalDistance: estimatedDistance,
-            efficiency: Math.floor(calculatedEfficiency)
-        });
-
-        // 2. Recent Shipments for Table
-        const recent = shipments
-            .slice(0, 5)
-            .map(s => ({
-                id: s.id,
-                origin: s.origin,
-                destination: s.destination,
-                cargo: s.cargo,
-                status: s.status
-            }));
-        setRecentShipments(recent);
-
-        // 3. Monthly Analytics (Mocked)
-        const mockRouteAnalytics = [
-            { name: 'Jul', value: 2400 },
-            { name: 'Aug', value: 2700 },
-            { name: 'Sep', value: 3100 },
-            { name: 'Oct', value: 2900 },
-            { name: 'Nov', value: 3400 },
-            { name: 'Dec', value: 3600 },
-        ];
-        setMonthlyData(mockRouteAnalytics);
-
-        // 4. Vehicle Utilization (Mocked based on real data)
-        const maintenance = vehicles.filter(v => v.status === 'MAINTENANCE').length;
-        const onRoute = vehicles.filter(v => v.status === 'ON ROUTE').length;
-        const available = vehicles.filter(v => v.status === 'AVAILABLE').length;
-
-        setUtilizationData([
-            { name: 'On Route', value: onRoute || 5, color: '#4ade80' }, // Green
-            { name: 'Available', value: available || 7, color: '#bae6fd' }, // Light Blue
-            { name: 'Maintenance', value: maintenance || 3, color: '#fde68a' } // Beige
-        ]);
+    // Fetch Dashboard Data from API
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            const response = await api.transporter.getStats();
+            if (response.success) {
+                const { stats, utilizationData, monthlyData, recentShipments } = response.data;
+                setStats(stats);
+                setUtilizationData(utilizationData);
+                setMonthlyData(monthlyData);
+                setRecentShipments(recentShipments);
+            }
+        } catch (error) {
+            console.error('Failed to fetch dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Initial Load
     useEffect(() => {
-        refreshDashboardData();
+        fetchDashboardData();
     }, []);
 
     const handleAddVehicle = (newVehicle) => {
-        vehicleStore.add(newVehicle);
-        refreshDashboardData();
+        // vehicleStore logic or just re-fetch
+        fetchDashboardData();
     };
 
     const handleAddShipment = (newShipment) => {
-        shipmentStore.add(newShipment);
-        refreshDashboardData();
+        // shipmentStore logic or just re-fetch
+        fetchDashboardData();
     };
 
     // Filter Logic
@@ -138,6 +102,12 @@ const TransporterDashboard = () => {
     return (
         <DashboardLayout role="transporter">
             <div className={`space-y-6 ${isMobile ? 'pb-20' : ''}`}>
+                {loading && (
+                    <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+                        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p className="text-slate-600 font-medium animate-pulse">Syncing Global Fleet Data...</p>
+                    </div>
+                )}
 
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in">
@@ -177,43 +147,39 @@ const TransporterDashboard = () => {
                 <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-4 gap-6'}`}>
                     {isMobile ? (
                         <>
-                            <MobileMetricCard title="TOTAL FLEET SIZE" value={stats.totalFleet} icon={Truck} color="emerald" delay={0.1} />
-                            <MobileMetricCard title="COMPLETED" value={stats.completedShipments} icon={CheckCircle2} trend={15} color="blue" delay={0.2} />
-                            <MobileMetricCard title="TOTAL DISTANCE" value={stats.totalDistance.toLocaleString()} icon={Navigation} trend={8} color="amber" delay={0.3} />
-                            <MobileMetricCard title="FLEET EFFICIENCY" value={stats.efficiency} unit="%" icon={Activity} trend={-1} color="rose" delay={0.4} />
+                            <MobileMetricCard title="TOTAL FLEET" value={stats.totalFleet} icon={Truck} color="emerald" delay={0.1} />
+                            <MobileMetricCard title="ACTIVE SHIPMENTS" value={stats.activeShipments} icon={Activity} color="orange" delay={0.2} />
+                            <MobileMetricCard title="COMPLETED" value={stats.completedShipments} icon={CheckCircle2} color="blue" delay={0.3} />
+                            <MobileMetricCard title="REGISTERED DRIVERS" value={stats.totalDrivers} icon={Users} color="indigo" delay={0.4} />
                         </>
                     ) : (
                         <>
                             <MetricCard
-                                title="TOTAL FLEET SIZE"
+                                title="TOTAL FLEET"
                                 value={stats.totalFleet}
                                 icon={Truck}
                                 color="emerald"
                                 delay={0.1}
                             />
                             <MetricCard
-                                title="COMPLETED"
-                                value={stats.completedShipments}
-                                icon={CheckCircle2}
-                                trend={15}
-                                color="blue"
+                                title="ACTIVE SHIPMENTS"
+                                value={stats.activeShipments}
+                                icon={Activity}
+                                color="orange"
                                 delay={0.2}
                             />
                             <MetricCard
-                                title="TOTAL DISTANCE"
-                                value={stats.totalDistance.toLocaleString()}
-                                icon={Navigation}
-                                trend={8}
-                                color="amber"
+                                title="COMPLETED"
+                                value={stats.completedShipments}
+                                icon={CheckCircle2}
+                                color="blue"
                                 delay={0.3}
                             />
                             <MetricCard
-                                title="FLEET EFFICIENCY"
-                                value={stats.efficiency}
-                                unit="%"
-                                icon={Activity}
-                                trend={-1}
-                                color="rose"
+                                title="REGISTERED DRIVERS"
+                                value={stats.totalDrivers}
+                                icon={Users}
+                                color="indigo"
                                 delay={0.4}
                             />
                         </>
@@ -243,12 +209,11 @@ const TransporterDashboard = () => {
                                 <Area
                                     type="monotone"
                                     dataKey="value"
-                                    stroke="#10b981" // Emerald 500
+                                    stroke="#10b981" 
                                     strokeWidth={2}
-                                    strokeDasharray="5 5" // Dashed line style
                                     fillOpacity={1}
                                     fill="url(#colorRoute)"
-                                    name="Distance"
+                                    name="Shipments"
                                 />
                             </AreaChart>
                         </ChartCardComponent>
@@ -261,24 +226,22 @@ const TransporterDashboard = () => {
                             subtitle="Fleet status distribution"
                             height={isMobile ? 250 : 300}
                         >
-                            <div className="relative flex justify-center items-center h-full">
-                                <PieChart width={isMobile ? 250 : 200} height={isMobile ? 250 : 200}>
-                                    <Pie
-                                        data={utilizationData}
-                                        innerRadius={isMobile ? 60 : 60}
-                                        outerRadius={isMobile ? 80 : 80}
-                                        paddingAngle={0}
-                                        dataKey="value"
-                                        startAngle={90}
-                                        endAngle={-270}
-                                    >
-                                        {utilizationData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip {...chartTheme.tooltip} />
-                                </PieChart>
-                            </div>
+                            <PieChart>
+                                <Pie
+                                    data={utilizationData}
+                                    innerRadius={isMobile ? 50 : 60}
+                                    outerRadius={isMobile ? 70 : 80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                    startAngle={90}
+                                    endAngle={-270}
+                                >
+                                    {utilizationData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                                    ))}
+                                </Pie>
+                                <Tooltip {...chartTheme.tooltip} />
+                            </PieChart>
 
                             <div className="flex justify-center gap-4 mt-2">
                                 {utilizationData.map(d => (

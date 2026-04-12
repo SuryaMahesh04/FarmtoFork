@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Sprout, Wind, Droplets, ExternalLink, Edit } from 'lucide-react';
+import { MapPin, Sprout, Wind, Droplets, ExternalLink, Edit, Check, X, ShieldCheck } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/ui/Button';
 import Loader from '../../components/ui/Loader';
@@ -10,51 +10,124 @@ const MyFarm = () => {
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isConfiguring, setIsConfiguring] = useState(false);
+    const [locationPreview, setLocationPreview] = useState(null);
     const [weather, setWeather] = useState(null);
 
     useEffect(() => {
-        const fetchFarmDetails = async () => {
-            try {
-                const minLoadTime = 3400;
-                const [res] = await Promise.all([
-                    api.auth.getMe(),
-                    new Promise(resolve => setTimeout(resolve, minLoadTime))
-                ]);
-
-                if (res.success) {
-                    setProfile(res.data.profile);
-
-                    // Fetch weather if coordinates exist
-                    if (res.data.profile?.address?.coordinates?.lat) {
-                        fetchWeather(res.data.profile.address.coordinates.lat, res.data.profile.address.coordinates.lng);
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to fetch farm details', error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchFarmDetails();
     }, []);
 
     const fetchWeather = async (lat, lng) => {
         try {
-            // Using a default key for demo if variable is missing (NOT RECOMMENDED FOR PRODUCTION, BUT HELPS LOCAL DEV)
             const API_KEY = import.meta.env.VITE_WEATHER_API_KEY || '64a9388835f14feaa16164601242301';
             const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${lat},${lng}`);
-
             if (!res.ok) {
-                console.error('Weather API Error:', res.statusText);
                 setWeather({ error: true });
                 return;
             }
-
             const data = await res.json();
             setWeather(data);
         } catch (error) {
-            console.error('Failed to fetch weather', error);
             setWeather({ error: true });
+        }
+    };
+
+    const fetchFarmDetails = async () => {
+        try {
+            setLoading(true);
+            const res = await api.auth.getMe();
+            if (res.success) {
+                setProfile(res.data.profile);
+                if (res.data.profile?.address?.coordinates?.lat) {
+                    fetchWeather(res.data.profile.address.coordinates.lat, res.data.profile.address.coordinates.lng);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch farm details', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDetectLocation = () => {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+
+        setIsConfiguring(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude: lat, longitude: lng } = position.coords;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+                    const data = await response.json();
+
+                    if (data && data.address) {
+                        const addr = data.address;
+                        const detectedLocation = {
+                            state: addr.state || 'N/A',
+                            district: addr.state_district || addr.county || addr.district || 'N/A',
+                            village: addr.village || addr.suburb || addr.town || addr.city || addr.hamlet || 'N/A',
+                            formattedAddress: data.display_name,
+                            coordinates: { lat, lng }
+                        };
+                        setLocationPreview(detectedLocation);
+                    } else {
+                        throw new Error('Could not resolve address details');
+                    }
+                } catch (error) {
+                    console.error('Location detection error:', error);
+                    alert('Failed to detect address details. Continuing with coordinates only.');
+                    setLocationPreview({
+                        state: 'Manual Entry Required',
+                        district: 'Manual Entry Required',
+                        village: 'Manual Entry Required',
+                        formattedAddress: `Lat: ${lat}, Lng: ${lng}`,
+                        coordinates: { lat, lng }
+                    });
+                } finally {
+                    setIsConfiguring(false);
+                }
+            },
+            (error) => {
+                console.error('Geolocation permission error:', error);
+                alert('Location access denied. Please allow access to use this feature.');
+                setIsConfiguring(false);
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+    };
+
+    const handleSaveLocation = async () => {
+        if (!locationPreview) return;
+
+        try {
+            setLoading(true);
+            const updatePayload = {
+                ...profile,
+                state: locationPreview.state,
+                district: locationPreview.district,
+                village: locationPreview.village,
+                address: {
+                    ...profile?.address,
+                    formattedAddress: locationPreview.formattedAddress,
+                    coordinates: locationPreview.coordinates
+                }
+            };
+
+            const res = await api.auth.updateProfile(updatePayload);
+            if (res.success) {
+                setProfile(res.data.profile);
+                setLocationPreview(null);
+                fetchWeather(locationPreview.coordinates.lat, locationPreview.coordinates.lng);
+            }
+        } catch (error) {
+            console.error('Failed to save location', error);
+            alert('Failed to save location');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -88,15 +161,49 @@ const MyFarm = () => {
                         <h1 className="text-2xl font-display font-bold text-slate-800">My Farm</h1>
                         <p className="text-slate-500">Overview of your farm location and details</p>
                     </div>
-                    <Button
-                        variant="outline"
-                        icon={Edit}
-                        onClick={() => navigate('/farmer/settings')}
-                        className="w-full md:w-auto justify-center"
-                    >
-                        Edit Details
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <Button
+                            variant="secondary"
+                            icon={MapPin}
+                            onClick={handleDetectLocation}
+                            loading={isConfiguring}
+                            disabled={isConfiguring}
+                            className="justify-center"
+                        >
+                            {isConfiguring ? 'Detecting...' : 'Detect My Location'}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            icon={Edit}
+                            onClick={() => navigate('/farmer/settings')}
+                            className="justify-center"
+                        >
+                            Edit Details
+                        </Button>
+                    </div>
                 </div>
+
+                {/* Location Preview Banner */}
+                {locationPreview && (
+                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in shadow-sm">
+                        <div className="flex items-start gap-4">
+                            <div className="bg-emerald-500 p-2 rounded-full text-white mt-1">
+                                <ShieldCheck size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-emerald-900 leading-tight mb-1">Location Detected!</h3>
+                                <p className="text-sm text-emerald-800">
+                                    Detected <strong>{locationPreview.village}</strong> in <strong>{locationPreview.district}, {locationPreview.state}</strong>.
+                                </p>
+                                <p className="text-xs text-emerald-600 mt-1 italic">{locationPreview.formattedAddress}</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <Button size="sm" variant="ghost" icon={X} onClick={() => setLocationPreview(null)} className="flex-1 md:flex-none">Cancel</Button>
+                            <Button size="sm" icon={Check} onClick={handleSaveLocation} className="flex-1 md:flex-none">Confirm & Save</Button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Farm Card */}

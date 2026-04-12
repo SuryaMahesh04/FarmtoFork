@@ -15,8 +15,8 @@ const MobileLayout = ({ children, role }) => {
                 </div>
             </main>
 
-            {/* Bottom Navigation */}
-            <MobileNav role={role} />
+            {/* Bottom Navigation (Hidden for consumers) */}
+            {role !== 'consumer' && <MobileNav role={role} />}
         </div>
     );
 };
