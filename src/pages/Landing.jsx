@@ -7,6 +7,7 @@ import heroImage from '../assets/image.png';
 import logo from '../assets/logo2.png';
 import useMediaQuery from '../utils/useMediaQuery';
 import { authHelpers } from '../utils/api';
+import LandingAssistant from '../components/ui/LandingAssistant';
 
 const Landing = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -59,7 +60,7 @@ const Landing = () => {
                             <img
                                 src={logo}
                                 alt="Farm2Fork Logo"
-                                className="h-14 md:h-16 w-auto object-contain"
+                                className="h-18 md:h-24 w-auto object-contain transition-transform hover:scale-105 duration-300"
                             />
                             <span className="font-display font-bold text-lg md:text-xl tracking-tight text-slate-900">
                                 Farm<span className="text-emerald-700">2</span>Fork
@@ -497,7 +498,7 @@ const Landing = () => {
                                 <img
                                     src={logo}
                                     alt="Farm2Fork Logo"
-                                    className="h-10 w-auto brightness-0 invert"
+                                    className="h-16 w-auto brightness-0 invert"
                                 />
                                 <span className="font-display font-bold text-xl text-white">
                                     Farm<span className="text-emerald-500">2</span>Fork
@@ -546,14 +547,14 @@ const Landing = () => {
                             </ul>
                         </div>
 
-                        {/* Company Links */}
+                        {/* Team Links */}
                         <div>
-                            <h4 className="font-bold text-white mb-6">Company</h4>
+                            <h4 className="font-bold text-white mb-6">Team</h4>
                             <ul className="space-y-4 text-sm text-slate-400">
-                                <li><a href="#" className="hover:text-emerald-400 transition-colors">About Us</a></li>
-                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Careers</a></li>
-                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Blog</a></li>
-                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Press Kit</a></li>
+                                <li><Link to="/about-us" className="hover:text-emerald-400 transition-colors">About Us</Link></li>
+                                <li><Link to="/architecture" className="hover:text-emerald-400 transition-colors">Platform Architecture</Link></li>
+                                <li><Link to="/security" className="hover:text-emerald-400 transition-colors">Security Model</Link></li>
+                                <li><Link to="/documentation" className="hover:text-emerald-400 transition-colors">Technology Stack</Link></li>
                                 <li><a href="#" className="hover:text-emerald-400 transition-colors">Contact</a></li>
                             </ul>
                         </div>
@@ -562,10 +563,10 @@ const Landing = () => {
                         <div>
                             <h4 className="font-bold text-white mb-6">Resources</h4>
                             <ul className="space-y-4 text-sm text-slate-400">
-                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Documentation</a></li>
-                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Privacy Policy</a></li>
-                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Terms of Service</a></li>
-                                <li><a href="#" className="hover:text-emerald-400 transition-colors">Cookie Policy</a></li>
+                                <li><Link to="/documentation" className="hover:text-emerald-400 transition-colors">Documentation</Link></li>
+                                <li><Link to="/privacy-policy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link></li>
+                                <li><Link to="/terms-of-service" className="hover:text-emerald-400 transition-colors">Terms of Service</Link></li>
+                                <li><Link to="/cookie-policy" className="hover:text-emerald-400 transition-colors">Cookie Policy</Link></li>
                                 <li><a href="#" className="hover:text-emerald-400 transition-colors flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                                     System Status
@@ -584,6 +585,9 @@ const Landing = () => {
                     </div>
                 </div>
             </footer>
+
+            {/* Forge AI Assistant */}
+            <LandingAssistant />
 
         </div >
     );

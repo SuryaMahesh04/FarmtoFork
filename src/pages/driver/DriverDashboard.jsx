@@ -340,8 +340,9 @@ const DriverDashboard = () => {
         }
 
         if (dest && isValidCoordinate(dest.lat, dest.lng)) {
+            // Open Native Google Maps
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`, '_blank');
-            // Advance UI state to show the "Reached" button
+            // Advance internal UI state to show the "Reached" button
             setNavigationState('navigating');
         } else {
             alert('Coordinates unavailable');
