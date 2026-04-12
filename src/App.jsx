@@ -9,6 +9,14 @@ import DistributorOnboarding from './components/forms/distributor/DistributorOnb
 import RetailerOnboarding from './components/forms/retailer/RetailerOnboarding';
 import ConsumerOnboarding from './components/forms/consumer/ConsumerOnboarding';
 
+import Documentation from './pages/public/Documentation';
+import PrivacyPolicy from './pages/public/PrivacyPolicy';
+import TermsOfService from './pages/public/TermsOfService';
+import CookiePolicy from './pages/public/CookiePolicy';
+import AboutUs from './pages/public/AboutUs';
+import Architecture from './pages/public/Architecture';
+import SecurityModel from './pages/public/SecurityModel';
+
 import FarmerDashboard from './pages/farmer/FarmerDashboard';
 import BatchDetail from './pages/farmer/BatchDetail';
 import MyBatches from './pages/farmer/MyBatches';
@@ -67,11 +75,13 @@ import DriverVehicle from './pages/driver/DriverVehicle';
 import DriverShipments from './pages/driver/DriverShipments';
 
 import { Toaster } from 'react-hot-toast';
+import { ConversationProvider } from '@elevenlabs/react';
 
 function App() {
     return (
-        <Router>
-            <Toaster position="top-right" reverseOrder={false} />
+        <ConversationProvider>
+            <Router>
+                <Toaster position="top-right" reverseOrder={false} />
             <ScrollToTop />
             <div className="min-h-screen relative overflow-hidden">
                 <Routes>
@@ -79,6 +89,15 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/notifications" element={<Notifications />} />
+
+                    {/* Resources & Policies */}
+                    <Route path="/documentation" element={<Documentation />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/cookie-policy" element={<CookiePolicy />} />
+                    <Route path="/about-us" element={<AboutUs />} />
+                    <Route path="/architecture" element={<Architecture />} />
+                    <Route path="/security" element={<SecurityModel />} />
 
                     {/* Onboarding Routes */}
                     <Route path="/onboarding/farmer" element={<FarmerOnboarding />} />
@@ -157,7 +176,8 @@ function App() {
                     <Route path="/trace" element={<TraceProduct />} />
                 </Routes>
             </div>
-        </Router>
+            </Router>
+        </ConversationProvider>
     );
 }
 

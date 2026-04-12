@@ -308,3 +308,33 @@ exports.getConsumerAlerts = async (req, res) => {
         res.status(500).json({ success: false });
     }
 };
+
+// ElevenLabs Voice Session URL (Securely fetches signed url on server side to hide API Key)
+exports.getVoiceSession = async (req, res) => {
+    try {
+        const agentId = process.env.ELEVENLABS_AGENT_ID;
+        const apiKey = process.env.ELEVENLABS_API_KEY;
+
+        if (!agentId || !apiKey) {
+            return res.status(500).json({ success: false, message: 'ElevenLabs credentials not configured' });
+        }
+
+        const response = await fetch(
+            `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
+            {
+                headers: { 'xi-api-key': apiKey }
+            }
+        );
+
+        if (!response.ok) {
+            console.error('ElevenLabs API error', response.status, await response.text());
+            return res.status(response.status).json({ success: false, message: 'Failed to fetch signed url from ElevenLabs' });
+        }
+
+        const data = await response.json();
+        res.json({ success: true, signedUrl: data.signed_url });
+    } catch (error) {
+        console.error('Error fetching voice session:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};

@@ -26,10 +26,11 @@ Farm2Fork is a modern agricultural supply chain platform designed to bring trans
 
 - **Multi-role Platform**: Supports farmers, transporters, distributors, retailers, and administrators
 - **Complete Traceability**: QR code-based batch tracking from farm to consumer
-- **Real-time Tracking**: Live shipment tracking and status updates
-- **Analytics Dashboard**: Comprehensive insights for all stakeholders
+- **Advanced Geolocation**: Automated location detection using Browser API & OpenStreetMap
+- **Road-Based Routing**: Real-time logistics tracking using OSRM for actual travel distances
+- **Field-Level Encryption**: Sensitive data protection using AES-256-GCM
 - **Secure Authentication**: Role-based access control with JWT authentication
-- **Modern UI/UX**: Beautiful, responsive interface built with React and Tailwind CSS
+- **Modern UI/UX**: Premium, responsive interface built with React and Tailwind CSS
 
 ## 📸 Screenshots
 
@@ -76,16 +77,19 @@ Farm2Fork is a modern agricultural supply chain platform designed to bring trans
 
 ### For Farmers 👨‍🌾
 - Create and manage crop batches
+- Automated "Detect My Location" for precise GPS tracking
 - Generate QR codes for product traceability
-- Create shipments to distributors/retailers
+- Create shipments to distributors/retailers with actual road distances
 - Track farm analytics and performance
-- Manage farm details and KYC information
+- Secure document storage via Vercel Blob for Organic Certification
+- Decrypted, secure data viewing for sensitive batch info
 
 ### For Transporters 🚛
 - View and accept shipment requests
-- Real-time route tracking
+- Real-time road-based routing using OSRM (Open Source Routing Machine)
+- Actual travel distance tracking (vs. straight-line distance)
 - Update shipment status and location
-- Manage vehicle fleet
+- Advanced fleet management with driver-vehicle assignment logic
 - Analytics on completed deliveries
 
 ### For Distributors 📦
@@ -113,6 +117,15 @@ Farm2Fork is a modern agricultural supply chain platform designed to bring trans
 - Monitor all transactions
 - System configuration
 
+## 🔒 Security & Privacy
+
+Privacy and data integrity are core pillars of the Farm2Fork platform. We implement enterprise-grade security measures to protect stakeholder data.
+
+- **Data Encryption**: All sensitive fields (Quantity, Price per Unit, GPS Coordinates) are encrypted at the field level using **AES-256-GCM** before being stored in the database.
+- **Crypto Engine**: A custom backend cryptographic engine handles on-the-fly encryption/decryption, ensuring data is only visible to authorized personnel.
+- **Signature Verification**: Document payloads are digitally signed to detect and prevent unauthorized tampering in the supply chain.
+- **Fail-safe UI**: The dashboard includes high-integrity rendering safeguards to prevent system crashes (white screens) in case of data formatting anomalies.
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -130,10 +143,12 @@ Farm2Fork is a modern agricultural supply chain platform designed to bring trans
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: MongoDB with Mongoose ODM
+- **Storage**: Vercel Blob for secure document management
 - **Authentication**: JWT (JSON Web Tokens)
-- **Security**: bcrypt for password hashing
+- **Security**: AES-256-GCM field encryption, bcrypt for hashing
+- **Geocoding**: OpenStreetMap / Nominatim API
+- **Routing**: OSRM (Open Source Routing Machine)
 - **Validation**: Express Validator
-- **CORS**: Enabled for cross-origin requests
 
 ### Development Tools
 - **Build Tool**: Vite
@@ -393,14 +408,16 @@ For detailed testing instructions, refer to [SETUP_GUIDE.md](./SETUP_GUIDE.md#te
 
 - [x] User authentication and role-based access
 - [x] Farmer batch creation and management
+- [x] Automated Geolocation & Precise GPS Tracking
 - [x] QR code generation for products
-- [x] Shipment creation and tracking
-- [x] Multi-role dashboards
+- [x] Shipment creation and road-based routing
+- [x] Multi-role dashboards with design-system consistency
+- [x] Field-level data encryption (AES-256-GCM)
+- [x] Multi-language support (integrated Microsoft Translator)
 - [x] Analytics and reporting
 - [ ] Mobile application (iOS/Android)
 - [ ] Blockchain integration for immutable records
 - [ ] Payment gateway integration
-- [ ] Multi-language support
 - [ ] SMS/Email notifications
 - [ ] Advanced analytics with AI/ML
 

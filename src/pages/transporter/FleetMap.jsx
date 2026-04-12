@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -34,6 +34,11 @@ const FleetMap = () => {
     const [drivers, setDrivers] = useState([]);
     const [shipments, setShipments] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Routing state
+    const [selectedDriverId, setSelectedDriverId] = useState(null);
+    const [routePoints, setRoutePoints] = useState([]);
+    const [routeInfo, setRouteInfo] = useState(null);
 
     const fetchDrivers = async () => {
         try {
@@ -62,16 +67,76 @@ const FleetMap = () => {
     }, []);
 
     // Helper to find active assignment for a driver
-    const getDriverAssignment = (driverId) => {
-        // console.log('Checking for driver:', driverId);
-        // console.log('Shipments:', shipments);
+    const getDriverAssignment = (driver) => {
         return shipments.find(s => {
             const shipmentDriverId = s.driver?._id || s.driver;
-            // Ensure both are strings for comparison
-            const isMatch = String(shipmentDriverId) === String(driverId);
+            // The shipment stores the driver's User ID, not their Driver model ID
+            const isMatch = String(shipmentDriverId) === String(driver.user) || String(shipmentDriverId) === String(driver._id);
             const isActiveStatus = ['assigned', 'accepted', 'at_pickup', 'picked_up', 'in_transit', 'in-transit', 'arrived'].includes(s.status);
             return isMatch && isActiveStatus;
         });
+    };
+
+    const handleDriverSelect = async (driver, activeJob) => {
+        setSelectedDriverId(driver._id);
+        if (!activeJob) {
+            setRoutePoints([]);
+            setRouteInfo(null);
+            return;
+        }
+
+        // Determine destination coordinates
+        let destCoords = null;
+        if (activeJob.distributor?.profile?.address?.coordinates?.lat) {
+            destCoords = activeJob.distributor.profile.address.coordinates;
+        } else if (activeJob.distributor?.profile?.city) {
+            const query = activeJob.distributor.profile.city;
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    destCoords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                }
+            } catch (err) {
+                console.error("Geocoding failed", err);
+            }
+        }
+
+        if (destCoords && driver.currentLocation?.lat) {
+            const start = driver.currentLocation;
+            const end = destCoords;
+            try {
+                const response = await fetch(
+                    `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`
+                );
+                const data = await response.json();
+                if (data.code === 'Ok' && data.routes?.length > 0) {
+                    const route = data.routes[0];
+                    const points = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                    setRoutePoints(points);
+                    
+                    // Format duration
+                    const hrs = Math.floor(route.duration / 3600);
+                    const mins = Math.floor((route.duration % 3600) / 60);
+                    const durationStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+                    
+                    // Format distance
+                    const distKm = (route.distance / 1000).toFixed(1);
+
+                    setRouteInfo({ duration: durationStr, distance: distKm });
+                } else {
+                    setRoutePoints([[start.lat, start.lng], [end.lat, end.lng]]);
+                    setRouteInfo(null);
+                }
+            } catch (err) {
+                console.error('Routing failed', err);
+                setRoutePoints([[start.lat, start.lng], [end.lat, end.lng]]);
+                setRouteInfo(null);
+            }
+        } else {
+            setRoutePoints([]);
+            setRouteInfo(null);
+        }
     };
 
     // Filter drivers with valid locations
@@ -107,15 +172,18 @@ const FleetMap = () => {
 
                         {visibleDrivers.map(driver => {
                             const isOnDuty = driver.dutyStatus === 'on-duty';
-                            const activeJob = getDriverAssignment(driver._id);
+                            const activeJob = getDriverAssignment(driver);
 
                             return (
                                 <Marker
                                     key={driver._id}
                                     position={[driver.currentLocation.lat, driver.currentLocation.lng]}
                                     icon={isOnDuty ? activeTruckIcon : inactiveTruckIcon}
+                                    eventHandlers={{
+                                        click: () => handleDriverSelect(driver, activeJob)
+                                    }}
                                 >
-                                    <Popup className="w-64">
+                                    <Popup className="w-64" onClose={() => { setRoutePoints([]); setRouteInfo(null); }}>
                                         <div className="p-1 min-w-[200px]">
                                             <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-2">
                                                 <div>
@@ -134,12 +202,19 @@ const FleetMap = () => {
                                                 </div>
 
                                                 {activeJob ? (
-                                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                                        <div className="flex items-center gap-2 mb-2 text-blue-700 font-bold text-xs uppercase tracking-wider">
-                                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                                            On Route
+                                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 flex flex-col gap-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase tracking-wider">
+                                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                                On Route
+                                                            </div>
+                                                            {selectedDriverId === driver._id && routeInfo && (
+                                                                <div className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                                                    {routeInfo.distance} km • ETA {routeInfo.duration}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <div className="space-y-2 relative pl-3 border-l-2 border-blue-200">
+                                                        <div className="space-y-2 relative pl-3 border-l-2 border-blue-200 mt-1">
                                                             <div>
                                                                 <p className="text-[10px] text-blue-400 font-bold">FROM</p>
                                                                 <p className="text-xs font-semibold text-slate-700 truncate">{activeJob.farmer?.profile?.city || 'Farm'}</p>
@@ -151,8 +226,8 @@ const FleetMap = () => {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-center py-2 text-xs text-slate-400 italic">
-                                                        No active assignment
+                                                    <div className="text-center py-2 text-xs text-slate-400 italic bg-slate-50 rounded-lg">
+                                                        Idle - No active assignment
                                                     </div>
                                                 )}
 
@@ -167,6 +242,16 @@ const FleetMap = () => {
                                 </Marker>
                             );
                         })}
+
+                        {routePoints.length > 0 && (
+                            <Polyline
+                                positions={routePoints}
+                                color="#3b82f6" // Nice blue color
+                                weight={4}
+                                opacity={0.8}
+                                dashArray="10, 10" // Make it dashed to indicate an active/estimated route
+                            />
+                        )}
                     </MapContainer>
 
                     {loading && (
