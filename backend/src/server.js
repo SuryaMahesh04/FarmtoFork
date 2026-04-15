@@ -6,8 +6,7 @@ const connectDB = require('./config/database');
 // Initialize express app
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// Removed global db connection call. Using per-request middleware for Vercel.
 
 // Middleware
 app.use(cors({
@@ -16,6 +15,20 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Ensure database connection in Serverless Environments
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            message: 'Database connection failed. Please try again later.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+        });
+    }
+});
 
 // Routes
 const authRoutes = require('./routes/auth');
