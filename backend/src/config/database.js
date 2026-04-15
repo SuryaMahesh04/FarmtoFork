@@ -1,10 +1,6 @@
 const mongoose = require('mongoose');
-const dns = require('dns');
 
-// Force Google DNS to bypass local ISP blocks on SRV queries
-dns.setServers(['8.8.8.8', '1.1.1.1']);
-
-// Cache the connection
+// Cache the connection across Vercel Lambda warm invocations
 let isConnected = false;
 
 const connectDB = async () => {
