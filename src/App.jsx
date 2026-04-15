@@ -16,6 +16,11 @@ import CookiePolicy from './pages/public/CookiePolicy';
 import AboutUs from './pages/public/AboutUs';
 import Architecture from './pages/public/Architecture';
 import SecurityModel from './pages/public/SecurityModel';
+import RoleOverview from './pages/public/RoleOverview';
+import FeaturesPage from './pages/public/FeaturesPage';
+import EcosystemPage from './pages/public/EcosystemPage';
+import HowItWorksPage from './pages/public/HowItWorksPage';
+import FAQPage from './pages/public/FAQPage';
 
 import FarmerDashboard from './pages/farmer/FarmerDashboard';
 import BatchDetail from './pages/farmer/BatchDetail';
@@ -98,6 +103,11 @@ function App() {
                     <Route path="/about-us" element={<AboutUs />} />
                     <Route path="/architecture" element={<Architecture />} />
                     <Route path="/security" element={<SecurityModel />} />
+                    <Route path="/roles/:role" element={<RoleOverview />} />
+                    <Route path="/features" element={<FeaturesPage />} />
+                    <Route path="/ecosystem" element={<EcosystemPage />} />
+                    <Route path="/how-it-works" element={<HowItWorksPage />} />
+                    <Route path="/faq" element={<FAQPage />} />
 
                     {/* Onboarding Routes */}
                     <Route path="/onboarding/farmer" element={<FarmerOnboarding />} />

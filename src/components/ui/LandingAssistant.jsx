@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import useMediaQuery from '../../utils/useMediaQuery';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Bot, Minimize2, Maximize2, Sparkles, ChevronRight } from 'lucide-react';
 import forgeBotImg from '../../assets/forge_bot.png';
@@ -62,6 +63,7 @@ const QUICK_PROMPTS = [
 ];
 
 const LandingAssistant = () => {
+    const isMobile = useMediaQuery('(max-width: 768px)');
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [activeTab, setActiveTab] = useState('voice'); // 'text' | 'voice'
@@ -131,7 +133,7 @@ const LandingAssistant = () => {
                         whileHover={{ scale: 1.08 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setIsOpen(true)}
-                        className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-2xl shadow-emerald-500/40 flex items-center justify-center"
+                        className={`fixed ${isMobile ? 'bottom-24' : 'bottom-6'} right-6 z-50 w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-2xl shadow-emerald-500/40 flex items-center justify-center`}
                         aria-label="Open Farm2Fork Assistant"
                     >
                         {/* Ping ring */}
@@ -151,8 +153,8 @@ const LandingAssistant = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.92, y: 20 }}
                         transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-                        className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-24px)] flex flex-col rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/20 border border-slate-200/80"
-                        style={{ height: isMinimized ? 'auto' : '560px', maxHeight: 'calc(100vh - 80px)' }}
+                        className={`fixed ${isMobile ? 'bottom-24' : 'bottom-6'} right-6 z-50 w-[360px] max-w-[calc(100vw-24px)] flex flex-col rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/20 border border-slate-200/80 bg-white`}
+                        style={{ height: isMinimized ? 'auto' : '560px', maxHeight: isMobile ? 'calc(100vh - 112px)' : 'calc(100vh - 80px)' }}
                     >
                         {/* Header */}
                         <div className="flex-shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 flex items-center justify-between">
