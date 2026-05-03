@@ -31,28 +31,33 @@ app.use(async (req, res, next) => {
 });
 
 // Routes
-const authRoutes = require('./routes/auth');
-const farmerRoutes = require('./routes/farmer');
+const apiRouter = express.Router();
 
-app.use('/api/auth', authRoutes);
-app.use('/api/farmer', farmerRoutes);
-app.use('/api/transporter', require('./routes/transporter'));
-app.use('/api/distributor', require('./routes/distributor'));
-app.use('/api/retailer', require('./routes/retailer'));
-app.use('/api/shipments', require('./routes/shipment'));
-app.use('/api/drivers', require('./routes/drivers'));
-app.use('/api/vehicles', require('./routes/vehicles'));
-app.use('/api/notifications', require('./routes/notification'));
-app.use('/api/upload', require('./routes/upload'));
-app.use('/api/public', require('./routes/public'));
-app.use('/api/admin', require('./routes/admin'));
-app.get('/api/health', (req, res) => {
+apiRouter.use('/auth', require('./routes/auth'));
+apiRouter.use('/farmer', require('./routes/farmer'));
+apiRouter.use('/transporter', require('./routes/transporter'));
+apiRouter.use('/distributor', require('./routes/distributor'));
+apiRouter.use('/retailer', require('./routes/retailer'));
+apiRouter.use('/shipments', require('./routes/shipment'));
+apiRouter.use('/drivers', require('./routes/drivers'));
+apiRouter.use('/vehicles', require('./routes/vehicles'));
+apiRouter.use('/notifications', require('./routes/notification'));
+apiRouter.use('/upload', require('./routes/upload'));
+apiRouter.use('/public', require('./routes/public'));
+apiRouter.use('/admin', require('./routes/admin'));
+
+apiRouter.get('/health', (req, res) => {
     res.json({
         success: true,
         message: 'Farm2Fork API is running',
         timestamp: new Date().toISOString()
     });
 });
+
+// Mount the API router on both /api and / 
+// This ensures compatibility whether Vercel strips the /api prefix or not
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
