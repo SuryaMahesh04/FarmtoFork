@@ -22,10 +22,10 @@ app.use(async (req, res, next) => {
         await connectDB();
         next();
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Database connection failed. Please try again later.',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
