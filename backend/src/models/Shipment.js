@@ -50,6 +50,10 @@ const shipmentSchema = new mongoose.Schema({
         enum: ['pending', 'accepted', 'assigned', 'at_pickup', 'picked_up', 'in-transit', 'delivered', 'rejected'],
         default: 'pending'
     },
+    warehouse: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Warehouse'
+    },
     trackingUpdates: [{
         status: String,
         location: String,

@@ -155,17 +155,24 @@ const FarmerDashboard = () => {
                 <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-4 gap-6'}`}>
                     {isMobile ? (
                         <>
-                            <MobileMetricCard title="Total Batches" value={analytics?.metrics?.totalBatches || 0} icon={Package} trend={12} color="sage" delay={0.1} />
-                            <MobileMetricCard title="Active Shipments" value={analytics?.metrics?.activeShipments || 0} icon={Truck} trend={0} color="wheat" delay={0.2} />
-                            <MobileMetricCard title="Total Revenue" value={`₹${(analytics?.metrics?.totalRevenue / 100000).toFixed(2) || 0}L`} icon={TrendingUp} trend={24} color="sky" delay={0.3} />
-                            <MobileMetricCard title="System Integrity" value={`${analytics?.metrics?.integrityScore || 0}%`} icon={ShieldCheck} trend={0} color="terra" delay={0.4} />
+                            <MobileMetricCard title="Total Batches" value={analytics?.metrics?.totalBatches || 0} icon={Package} color="sage" delay={0.1} />
+                            <MobileMetricCard title="Active Shipments" value={analytics?.metrics?.activeShipments || 0} icon={Truck} color="wheat" delay={0.2} />
+                            <MobileMetricCard title="Total Revenue" value={`₹${(analytics?.metrics?.totalRevenue / 100000).toFixed(2) || 0}L`} icon={TrendingUp} color="sky" delay={0.3} />
+                            <MobileMetricCard title="System Integrity" value={`${analytics?.metrics?.integrityScore || 0}%`} icon={ShieldCheck} color="terra" delay={0.4} />
                         </>
                     ) : (
                         <>
-                            <MetricCard title="Total Batches" value={analytics?.metrics?.totalBatches || 0} icon={Package} trend={12} color="sage" delay={0.1} />
-                            <MetricCard title="Active Shipments" value={analytics?.metrics?.activeShipments || 0} icon={Truck} trend={0} color="wheat" delay={0.2} />
-                            <MetricCard title="Total Revenue" value={`₹${analytics?.metrics?.totalRevenue?.toLocaleString() || 0}`} icon={TrendingUp} trend={24} color="sky" delay={0.3} />
-                            <MetricCard title="System Integrity" value={analytics?.metrics?.integrityScore || 0} unit="%" icon={ShieldCheck} trend={0} color="terra" delay={0.4} />
+                            <MetricCard title="Total Batches" value={analytics?.metrics?.totalBatches || 0} icon={Package} color="sage" delay={0.1} />
+                            <MetricCard title="Active Shipments" value={analytics?.metrics?.activeShipments || 0} icon={Truck} color="wheat" delay={0.2} />
+                             <MetricCard 
+                                title="Total Revenue" 
+                                value={analytics?.metrics?.totalRevenue || 0} 
+                                prefix="₹"
+                                icon={TrendingUp} 
+                                color="sky" 
+                                delay={0.3} 
+                            />
+                            <MetricCard title="System Integrity" value={analytics?.metrics?.integrityScore || 0} suffix="%" icon={ShieldCheck} color="terra" delay={0.4} />
                         </>
                     )}
                 </div>

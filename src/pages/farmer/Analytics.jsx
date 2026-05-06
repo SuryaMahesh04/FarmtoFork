@@ -83,7 +83,6 @@ const Analytics = () => {
                         value={analytics.metrics?.activeBatches ? analytics.metrics.activeBatches * 50 : 0} // Estimate 50 units per batch
                         suffix=" Units"
                         icon={Sprout}
-                        trend={8}
                         color="sage"
                     />
                     <MetricCard
@@ -91,7 +90,6 @@ const Analytics = () => {
                         value={analytics.metrics?.totalRevenue ? (analytics.metrics.totalRevenue / 100000).toFixed(1) : 0}
                         suffix=" L"
                         icon={DollarSign}
-                        trend={15}
                         color="wheat"
                     />
                     <MetricCard
@@ -99,7 +97,6 @@ const Analytics = () => {
                         value={analytics.metrics?.qualityScore || 0}
                         suffix=" /100"
                         icon={Activity}
-                        trend={2}
                         color="terra"
                     />
                     <MetricCard
@@ -107,7 +104,6 @@ const Analytics = () => {
                         value={analytics.metrics?.totalBatches || 0}
                         suffix=""
                         icon={CloudRain}
-                        trend={5}
                         color="sky"
                     />
                 </div>

@@ -27,9 +27,11 @@ const DistributorShipments = () => {
                 const mappedData = response.data.map(s => ({
                     id: s.shipmentId,
                     _id: s._id, // Keep the actual mongo ID for navigation
-                    origin: s.origin?.city || s.farmer?.profile?.city || 'Origin',
-                    destination: s.destination?.city || s.distributor?.profile?.city || 'Destination',
-                    cargo: `${s.batch?.crop || 'Crop'} - ${s.batch?.quantity || 0}T`,
+                    origin: s.farmer?.profile?.village 
+                        ? `${s.farmer.profile.village}, ${s.farmer.profile.district || ''}`
+                        : (s.farmer?.profile?.city || 'Farm Location'),
+                    destination: s.distributor?.profile?.city || s.distributor?.profile?.companyName || 'Warehouse',
+                    cargo: `${s.batch?.crop || 'Crop'} - ${s.batch?.quantity || 0}${s.batch?.unit || 'T'}`,
                     driver: s.driver?.name || 'Unassigned',
                     eta: s.estimatedArrival || 'TBD',
                     status: s.status
@@ -105,7 +107,7 @@ const DistributorShipments = () => {
     const statusCounts = {
         all: allShipments.length,
         pending: allShipments.filter(s => s.status === 'pending').length,
-        in_transit: allShipments.filter(s => s.status === 'in_transit').length,
+        in_transit: allShipments.filter(s => s.status === 'in-transit').length,
         delivered: allShipments.filter(s => s.status === 'delivered').length
     };
 

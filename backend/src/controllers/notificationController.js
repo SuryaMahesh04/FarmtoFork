@@ -5,7 +5,14 @@ exports.getNotifications = async (req, res) => {
         const notifications = await Notification.find({ recipient: req.user.id })
             .sort({ createdAt: -1 })
             .limit(20)
-            .populate('sender', 'profile.fullName profile.companyName');
+            .populate('sender', 'profile.fullName profile.companyName profile.address profile.village profile.district profile.state')
+            .populate({
+                path: 'relatedId',
+                populate: {
+                    path: 'farmer',
+                    select: 'profile.fullName profile.address profile.village profile.district profile.state'
+                }
+            });
 
         const unreadCount = await Notification.countDocuments({
             recipient: req.user.id,

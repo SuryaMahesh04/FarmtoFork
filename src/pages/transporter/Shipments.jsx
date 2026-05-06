@@ -165,12 +165,16 @@ const Shipments = () => {
                                     <div className="space-y-3 mb-4">
                                         <div className="flex items-center gap-3 text-sm text-slate-600">
                                             <div className="w-8 flex justify-center"><MapPin size={16} className="text-emerald-500" /></div>
-                                            <span className="truncate flex-1">{shipment.origin || shipment.farmer?.profile?.city || 'Origin'}</span>
+                                            <span className="truncate flex-1">
+                                                {shipment.farmer?.profile?.village ? `${shipment.farmer.profile.village}, ${shipment.farmer.profile.district || ''}` : (shipment.farmer?.profile?.city || shipment.origin || 'Farm Location')}
+                                            </span>
                                         </div>
                                         <div className="pl-4 ml-4 border-l-2 border-slate-100 h-2"></div>
                                         <div className="flex items-center gap-3 text-sm text-slate-600">
                                             <div className="w-8 flex justify-center"><MapPin size={16} className="text-red-500" /></div>
-                                            <span className="truncate flex-1">{shipment.destination || shipment.distributor?.profile?.city || 'Destination'}</span>
+                                            <span className="truncate flex-1">
+                                                {shipment.distributor?.profile?.city || shipment.distributor?.profile?.companyName || shipment.destination || 'Warehouse'}
+                                            </span>
                                         </div>
                                     </div>
 

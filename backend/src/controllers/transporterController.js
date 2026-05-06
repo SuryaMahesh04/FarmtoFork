@@ -58,11 +58,12 @@ exports.getDashboardStats = async (req, res) => {
         }));
 
         // 5. Recent Shipments
-        const recentShipments = await Shipment.find({ transporter: transporterId })
+        const recentShipmentsData = await Shipment.find({ transporter: transporterId })
             .sort({ createdAt: -1 })
             .limit(5)
-            .populate('farmer', 'profile.fullName')
-            .populate('distributor', 'profile.companyName');
+            .populate('farmer', 'profile.fullName profile.village profile.district profile.city')
+            .populate('distributor', 'profile.companyName profile.city')
+            .populate('batch', 'crop quantity unit');
 
         res.json({
             success: true,
@@ -70,11 +71,11 @@ exports.getDashboardStats = async (req, res) => {
                 stats: { totalFleet, completedShipments, activeShipments: activeShipmentsCount, totalDrivers },
                 utilizationData,
                 monthlyData,
-                recentShipments: recentShipments.map(s => ({
+                recentShipments: recentShipmentsData.map(s => ({
                     id: s.shipmentId,
-                    origin: s.farmer?.profile?.fullName || 'Farmer',
-                    destination: s.distributor?.profile?.companyName || 'Distributor',
-                    cargo: 'Standard Load',
+                    origin: s.farmer?.profile?.village ? `${s.farmer.profile.village}, ${s.farmer.profile.district || ''}` : (s.farmer?.profile?.city || 'Farm'),
+                    destination: s.distributor?.profile?.city || s.distributor?.profile?.companyName || 'Warehouse',
+                    cargo: s.batch ? `${s.batch.crop} (${s.batch.quantity}${s.batch.unit || 'kg'})` : 'General Cargo',
                     status: s.status
                 }))
             }

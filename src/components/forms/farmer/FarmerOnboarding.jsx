@@ -25,11 +25,44 @@ const FarmerOnboarding = () => {
     const onLocationConfirm = (locationData) => {
         const { coordinates, address } = locationData;
         if (address) {
-            setValue('state', address.state);
-            setValue('district', address.city); // Map city to district for farmer
-            setValue('village', address.city); // Map city to village for farmer
+            // Find state match from our indiaStates data
+            const stateMatch = indiaStates.find(s => 
+                s.label.toLowerCase() === address.state.toLowerCase() ||
+                s.value.toLowerCase() === address.state.toLowerCase()
+            );
+
+            if (stateMatch) {
+                setValue('state', stateMatch.value);
+                
+                // Try to find matching district
+                const searchDistrict = address.district || address.city;
+                const districtMatch = stateMatch.districts.find(d => 
+                    d.name.toLowerCase().includes(searchDistrict.toLowerCase()) ||
+                    searchDistrict.toLowerCase().includes(d.name.toLowerCase())
+                );
+
+                if (districtMatch) {
+                    setValue('district', districtMatch.name);
+                    
+                    // Try to find matching village
+                    const searchVillage = address.city || address.suburb;
+                    const villageMatch = districtMatch.villages.find(v => 
+                        v.toLowerCase().includes(searchVillage.toLowerCase()) ||
+                        searchVillage.toLowerCase().includes(v.toLowerCase())
+                    );
+
+                    if (villageMatch) {
+                        setValue('village', villageMatch);
+                        setIsManualVillage(false);
+                    } else if (searchVillage) {
+                        // Fallback to manual entry if village isn't in our static list
+                        setIsManualVillage(true);
+                        setTimeout(() => setValue('village', searchVillage), 50);
+                    }
+                }
+            }
             
-            // Store coordinates for profile update
+            // Store coordinates and full address object
             setFormData(prev => ({ 
                 ...prev, 
                 coordinates: coordinates,
@@ -89,7 +122,7 @@ const FarmerOnboarding = () => {
                 }
 
                 // Then, update profile with remaining onboarding data
-                await api.auth.updateProfile({
+                const updateRes = await api.auth.updateProfile({
                     fullName: data.fullName,
                     mobile: data.mobile,
                     state: data.state,
@@ -107,6 +140,10 @@ const FarmerOnboarding = () => {
                         coordinates: formData.coordinates || null
                     }
                 });
+
+                if (updateRes.success) {
+                    authHelpers.saveUser(updateRes.data);
+                }
 
                 // Navigate to farmer dashboard
                 navigate('/farmer');

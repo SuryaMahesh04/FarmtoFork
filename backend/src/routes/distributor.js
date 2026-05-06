@@ -11,7 +11,8 @@ const {
     getIncomingPOs,
     acceptPO,
     rejectPO,
-    markBatchForSale
+    markBatchForSale,
+    assignWarehouse
 } = require('../controllers/distributorController');
 
 // All routes are protected and only for distributors
@@ -28,5 +29,6 @@ router.get('/purchase-orders', getIncomingPOs);
 router.put('/purchase-orders/:id/accept', acceptPO);
 router.put('/purchase-orders/:id/reject', rejectPO);
 router.put('/inventory/:id/publish', markBatchForSale);
+router.post('/assign-warehouse', assignWarehouse);
 
 module.exports = router;

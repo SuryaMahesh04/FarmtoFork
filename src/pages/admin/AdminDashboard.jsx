@@ -104,7 +104,7 @@ const AdminDashboard = () => {
                 {/* Metrics Grid */}
                 <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-2 lg:grid-cols-4 gap-6'}`}>
                     <MetricCard title="NETWORK SCALE" value={overview.totalUsers} icon={Users} color="sky" />
-                    <MetricCard title="ECOSYSTEM VALUE" value={formatCurrency(overview.platformGMV)} icon={Activity} color="emerald" />
+                    <MetricCard title="ECOSYSTEM VALUE" value={overview.platformGMV} prefix="₹" icon={Activity} color="emerald" />
                     
                     <div className="relative group cursor-pointer" onClick={() => navigate('/admin/approvals')}>
                         <MetricCard title="GOVERNANCE ACTIONS" value={overview.pendingApprovals} icon={CheckCircle} color="amber" />
@@ -118,7 +118,8 @@ const AdminDashboard = () => {
                     <div className="relative group cursor-pointer" onClick={() => navigate('/admin/batches')}>
                         <MetricCard 
                             title={overview.tamperedBatches > 0 ? "SECURITY BREACH!" : "CRYPTOGRAPHIC INTEGRITY"} 
-                            value={overview.tamperedBatches > 0 ? overview.tamperedBatches : '100%'} 
+                            value={overview.tamperedBatches > 0 ? overview.tamperedBatches : 100} 
+                            suffix={overview.tamperedBatches > 0 ? "" : "%"}
                             icon={AlertTriangle} 
                             color={overview.tamperedBatches > 0 ? "rose" : "sage"} 
                         />

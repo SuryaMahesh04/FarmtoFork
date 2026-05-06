@@ -24,8 +24,17 @@ const RetailerOnboarding = () => {
     const onLocationConfirm = (locationData) => {
         const { coordinates, address } = locationData;
         if (address) {
-            setValue('state', address.state);
-            setValue('city', address.city);
+            // Find state match from our indiaStates data
+            const stateMatch = indiaStates.find(s => 
+                s.label.toLowerCase() === address.state.toLowerCase() ||
+                s.value.toLowerCase() === address.state.toLowerCase()
+            );
+
+            if (stateMatch) {
+                setValue('state', stateMatch.value);
+            }
+            
+            setValue('city', address.city || address.district || '');
             setValue('pincode', address.pincode);
             setValue('address', address.formattedAddress);
             
