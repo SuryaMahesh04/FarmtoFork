@@ -102,12 +102,12 @@ export const VoiceAgentTab = () => {
                 </AnimatePresence>
 
                 <div className={`relative z-10 w-24 h-24 rounded-full border-4 shadow-xl overflow-hidden bg-white flex items-center justify-center transition-colors duration-500 ${conversation.status === 'connected' ? (conversation.isSpeaking ? 'border-emerald-400 shadow-emerald-200' : 'border-teal-400 shadow-teal-200') : 'border-slate-100'}`}>
-                   {conversation.status === 'connected' && !conversation.isSpeaking && (
+                    {conversation.status === 'connected' && !conversation.isSpeaking && (
                         <div className="absolute inset-0 bg-teal-50/50 flex items-center justify-center opacity-70">
                             <Mic size={32} className="text-teal-400" />
                         </div>
-                   )}
-                   <img src={forgeBotImg} alt="Forge Bot" className={`w-full h-full object-cover transition-opacity duration-300 ${conversation.status === 'connected' && !conversation.isSpeaking ? 'opacity-30' : 'opacity-100'}`} />
+                    )}
+                    <img src={forgeBotImg} alt="Forge Bot" className={`w-full h-full object-cover transition-opacity duration-300 ${conversation.status === 'connected' && !conversation.isSpeaking ? 'opacity-30' : 'opacity-100'}`} />
                 </div>
             </div>
 
@@ -126,26 +126,26 @@ export const VoiceAgentTab = () => {
                 )}
                 {conversation.status === 'connected' && (
                     <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center">
-                         <div className="flex items-center gap-2">
-                             {conversation.isSpeaking ? <Volume2 size={16} className="text-emerald-500" /> : <Mic size={16} className="text-teal-500 animate-pulse" />}
-                             <h4 className={`font-bold ${conversation.isSpeaking ? 'text-emerald-600' : 'text-teal-600'}`}>
-                                 {conversation.isSpeaking ? 'Forge is speaking...' : 'Listening...'}
-                             </h4>
-                         </div>
-                         <p className="text-xs text-slate-500 mt-1">Speak clearly into your microphone</p>
+                        <div className="flex items-center gap-2">
+                            {conversation.isSpeaking ? <Volume2 size={16} className="text-emerald-500" /> : <Mic size={16} className="text-teal-500 animate-pulse" />}
+                            <h4 className={`font-bold ${conversation.isSpeaking ? 'text-emerald-600' : 'text-teal-600'}`}>
+                                {conversation.isSpeaking ? 'Forge is speaking...' : 'Listening...'}
+                            </h4>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">Speak clearly into your microphone</p>
                     </motion.div>
                 )}
             </div>
 
             <div className="flex gap-4 w-full px-6">
-                 {conversation.status === 'connected' ? (
-                     <button
-                         onClick={handleStopConversation}
-                         className="flex-1 py-3 bg-red-50 text-red-600 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
-                     >
-                         <Square size={16} className="fill-current" /> Stop
-                     </button>
-                 ) : (
+                {conversation.status === 'connected' ? (
+                    <button
+                        onClick={handleStopConversation}
+                        className="flex-1 py-3 bg-red-50 text-red-600 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                    >
+                        <Square size={16} className="fill-current" /> Stop
+                    </button>
+                ) : (
                     <button
                         onClick={handleStartConversation}
                         disabled={conversation.status === 'connecting'}
@@ -153,15 +153,15 @@ export const VoiceAgentTab = () => {
                     >
                         <Mic size={18} /> {conversation.status === 'connecting' ? 'Connecting...' : 'Start Voice Chat'}
                     </button>
-                 )}
+                )}
             </div>
-            
+
             {conversation.status === 'connected' && (
-                <button 
-                  onClick={() => conversation.setVolume({ volume: conversation.isMuted ? 1 : 0 })}
-                  className="mt-6 text-slate-400 hover:text-slate-600 text-xs flex items-center gap-1 transition-colors"
+                <button
+                    onClick={() => conversation.setVolume({ volume: conversation.isMuted ? 1 : 0 })}
+                    className="mt-6 text-slate-400 hover:text-slate-600 text-xs flex items-center gap-1 transition-colors"
                 >
-                    {conversation.isMuted ? <MicOff size={14}/> : <Mic size={14}/>} 
+                    {conversation.isMuted ? <MicOff size={14} /> : <Mic size={14} />}
                     {conversation.isMuted ? 'Unmute microphone' : 'Mute microphone'}
                 </button>
             )}
