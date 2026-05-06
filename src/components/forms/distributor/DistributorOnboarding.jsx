@@ -20,8 +20,18 @@ const DistributorOnboarding = () => {
     const onLocationConfirm = (locationData) => {
         const { coordinates, address } = locationData;
         if (address) {
-            setValue('state', address.state);
-            setValue('location', address.city);
+            // Find state match from our indiaStates data
+            const stateMatch = indiaStates.find(s => 
+                s.label.toLowerCase() === address.state.toLowerCase() ||
+                s.value.toLowerCase() === address.state.toLowerCase()
+            );
+
+            if (stateMatch) {
+                setValue('state', stateMatch.value);
+            }
+            
+            // Set city / location
+            setValue('location', address.city || address.district || '');
             
             // Store coordinates for profile update
             setMapData({ 

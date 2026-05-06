@@ -10,7 +10,9 @@ const MetricCard = ({
     trend,
     trendLabel,
     color = "sage",
-    delay = 0
+    delay = 0,
+    prefix = "",
+    suffix = ""
 }) => {
 
     const colors = {
@@ -38,12 +40,29 @@ const MetricCard = ({
             text: 'text-rose-700',
             shadow: 'shadow-rose-100'
         },
-        // Fallback for old sage/wheat maps if needed, or map them to above
         sage: { 
             bg: 'bg-gradient-to-br from-emerald-50 to-white', 
             icon: 'bg-gradient-to-br from-emerald-400 to-emerald-600', 
             text: 'text-emerald-700',
             shadow: 'shadow-emerald-100'
+        },
+        wheat: { 
+            bg: 'bg-gradient-to-br from-amber-50 to-white', 
+            icon: 'bg-gradient-to-br from-amber-400 to-amber-600', 
+            text: 'text-amber-700',
+            shadow: 'shadow-amber-100'
+        },
+        sky: { 
+            bg: 'bg-gradient-to-br from-sky-50 to-white', 
+            icon: 'bg-gradient-to-br from-sky-400 to-sky-600', 
+            text: 'text-sky-700',
+            shadow: 'shadow-sky-100'
+        },
+        terra: { 
+            bg: 'bg-gradient-to-br from-orange-50 to-white', 
+            icon: 'bg-gradient-to-br from-orange-400 to-orange-600', 
+            text: 'text-orange-700',
+            shadow: 'shadow-orange-100'
         }
     };
 
@@ -61,8 +80,17 @@ const MetricCard = ({
                 <div>
                     <h3 className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-1 opacity-80">{title}</h3>
                     <div className="text-3xl font-display font-bold text-slate-800 tracking-tight">
-                        <CountUp end={value} duration={2.5} separator="," />
-                        {/* Render unit if part of value or separate? Usually passed in value but let's stick to safe defaults */}
+                        {typeof value === 'number' ? (
+                            <CountUp 
+                                end={value} 
+                                duration={2.5} 
+                                separator="," 
+                                prefix={prefix} 
+                                suffix={suffix} 
+                            />
+                        ) : (
+                            <span>{value}</span>
+                        )}
                     </div>
                 </div>
                 <div className={`p-3.5 rounded-xl ${theme.icon} text-white shadow-lg shadow-black/5 flex items-center justify-center transform transition-transform group-hover:scale-110 duration-300`}>
@@ -70,20 +98,8 @@ const MetricCard = ({
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 relative z-10">
-                {trend !== undefined && (
-                    <span className={`
-            flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg border border-opacity-10
-            ${trend > 0 
-                ? 'bg-emerald-100/80 text-emerald-700 border-emerald-200' 
-                : 'bg-rose-100/80 text-rose-700 border-rose-200'}
-          `}>
-                        {trend > 0 ? <ArrowUpRight size={14} className="stroke-[3]" /> : <ArrowDownRight size={14} className="stroke-[3]" />}
-                        {Math.abs(trend)}%
-                    </span>
-                )}
-                <span className="text-xs text-slate-400 font-medium">{trendLabel || "vs last month"}</span>
-            </div>
+            {/* Trend section removed */}
+            <div className="h-4"></div>
 
             {/* Decorative background blob */}
             <div className={`absolute -bottom-8 -right-8 w-32 h-32 rounded-full ${theme.icon} opacity-5 blur-2xl group-hover:opacity-10 transition-opacity duration-500`}></div>

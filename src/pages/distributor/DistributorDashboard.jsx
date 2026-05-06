@@ -188,17 +188,17 @@ const DistributorDashboard = () => {
                 <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-4 gap-6'}`}>
                     {isMobile ? (
                         <>
-                            <MobileMetricCard title="Total Inventory" value={`${stats?.totalInventory || 0}kg`} icon={Warehouse} trend={0} color="wheat" delay={0.1} />
-                            <MobileMetricCard title="Incoming" value={stats?.incomingBatches || 0} icon={Truck} trend={0} color="sage" delay={0.2} />
-                            <MobileMetricCard title="Purchase Requests" value={stats?.pendingPOs || 0} icon={Mail} trend={0} color="sky" delay={0.3} onClick={() => navigate('/distributor/purchase-orders')} />
-                            <MobileMetricCard title="Storage Used" value={`${stats?.storageUsed || 0}%`} icon={Package} trend={0} color="terra" delay={0.4} />
+                            <MobileMetricCard title="Total Inventory" value={`${stats?.totalInventory || 0}kg`} icon={Warehouse} color="wheat" delay={0.1} />
+                            <MobileMetricCard title="Incoming" value={stats?.incomingBatches || 0} icon={Truck} color="sage" delay={0.2} />
+                            <MobileMetricCard title="Purchase Requests" value={stats?.pendingPOs || 0} icon={Mail} color="sky" delay={0.3} onClick={() => navigate('/distributor/purchase-orders')} />
+                            <MobileMetricCard title="Storage Used" value={`${stats?.storageUsed || 0}%`} icon={Package} color="terra" delay={0.4} />
                         </>
                     ) : (
                         <>
-                            <MetricCard title="Total Inventory" value={stats?.totalInventory || 0} unit=" kg" icon={Warehouse} trend={0} color="wheat" delay={0.1} />
-                            <MetricCard title="Incoming Shipments" value={stats?.incomingBatches || 0} icon={Truck} trend={0} color="sage" delay={0.2} />
-                            <MetricCard title="Purchase Requests" value={stats?.pendingPOs || 0} icon={Mail} trend={0} color="sky" delay={0.3} onClick={() => navigate('/distributor/purchase-orders')} />
-                            <MetricCard title="Storage Used" value={stats?.storageUsed || 0} unit="%" icon={Package} trend={0} color="terra" delay={0.4} />
+                            <MetricCard title="Total Inventory" value={stats?.totalInventory || 0} suffix=" kg" icon={Warehouse} color="wheat" delay={0.1} />
+                            <MetricCard title="Incoming Shipments" value={stats?.incomingBatches || 0} icon={Truck} color="sage" delay={0.2} />
+                            <MetricCard title="Purchase Requests" value={stats?.pendingPOs || 0} icon={Mail} color="sky" delay={0.3} onClick={() => navigate('/distributor/purchase-orders')} />
+                            <MetricCard title="Storage Used" value={stats?.storageUsed || 0} suffix="%" icon={Package} color="terra" delay={0.4} />
                         </>
                     )}
                 </div>

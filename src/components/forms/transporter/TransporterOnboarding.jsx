@@ -24,8 +24,18 @@ const TransporterOnboarding = () => {
     const onLocationConfirm = (locationData) => {
         const { coordinates, address } = locationData;
         if (address) {
-            setValue('primaryState', address.state);
-            setValue('hubCity', address.city);
+            // Find state match from our indiaStates data
+            const stateMatch = indiaStates.find(s => 
+                s.label.toLowerCase() === address.state.toLowerCase() ||
+                s.value.toLowerCase() === address.state.toLowerCase()
+            );
+
+            if (stateMatch) {
+                setValue('primaryState', stateMatch.value);
+            }
+            
+            // Set hub city
+            setValue('hubCity', address.city || address.district || '');
             
             // Store coordinates for profile update
             setFormData(prev => ({ 

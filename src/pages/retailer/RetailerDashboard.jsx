@@ -70,17 +70,17 @@ const RetailerDashboard = () => {
                 <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 lg:grid-cols-4 gap-6'}`}>
                     {isMobile ? (
                         <>
-                            <MobileMetricCard title="Inventory" value={stats.totalProducts} icon={Store} trend={0} color="wheat" delay={0.1} />
-                            <MobileMetricCard title="Units Sold" value={stats.unitsSold || 0} icon={PackageCheck} trend={0} color="sage" delay={0.2} />
-                            <MobileMetricCard title="Revenue" value={`₹${(stats.totalRevenue / 1000).toFixed(1)}k`} icon={TrendingUp} trend={0} color="terra" delay={0.3} />
-                            <MobileMetricCard title="Consumer Scans" value={stats.consumerScans} icon={ScanLine} trend={0} color="sky" delay={0.4} />
+                            <MobileMetricCard title="Inventory" value={stats.totalProducts} icon={Store} color="wheat" delay={0.1} />
+                            <MobileMetricCard title="Units Sold" value={stats.unitsSold || 0} icon={PackageCheck} color="sage" delay={0.2} />
+                            <MobileMetricCard title="Revenue" value={`₹${(stats.totalRevenue / 1000).toFixed(1)}k`} icon={TrendingUp} color="terra" delay={0.3} />
+                            <MobileMetricCard title="Consumer Scans" value={stats.consumerScans} icon={ScanLine} color="sky" delay={0.4} />
                         </>
                     ) : (
                         <>
-                            <MetricCard title="Inventory" value={stats.totalProducts} icon={Store} trend={0} color="wheat" delay={0.1} />
-                            <MetricCard title="Units Sold" value={stats.unitsSold || 0} icon={PackageCheck} trend={0} color="sage" delay={0.2} />
-                            <MetricCard title="Revenue" value={`₹${stats.totalRevenue?.toLocaleString() || 0}`} icon={TrendingUp} trend={0} color="terra" delay={0.3} />
-                            <MetricCard title="Consumer Scans" value={stats.consumerScans} icon={ScanLine} trend={0} color="sky" delay={0.4} />
+                            <MetricCard title="Inventory" value={stats.totalProducts} icon={Store} color="wheat" delay={0.1} />
+                            <MetricCard title="Units Sold" value={stats.unitsSold || 0} icon={PackageCheck} color="sage" delay={0.2} />
+                            <MetricCard title="Revenue" value={stats.totalRevenue || 0} prefix="₹" icon={TrendingUp} color="terra" delay={0.3} />
+                            <MetricCard title="Consumer Scans" value={stats.consumerScans} icon={ScanLine} color="sky" delay={0.4} />
                         </>
                     )}
                 </div>

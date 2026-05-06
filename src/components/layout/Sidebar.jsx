@@ -50,7 +50,6 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: Truck, label: 'Shipments', path: '/farmer/shipments' },
                     { icon: QrCode, label: 'Generate QR', path: '/farmer/scan' },
                     { icon: BarChart3, label: 'Analytics', path: '/farmer/analytics' },
-                    { icon: MapPin, label: 'Ecosystem Map', path: '/farmer/map' },
                     ...common
                 ];
             case 'transporter':
@@ -61,7 +60,6 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: FileText, label: 'Shipment Requests', path: '/transporter/requests' },
                     { icon: Users, label: 'Drivers', path: '/transporter/drivers' },
                     { icon: Truck, label: 'Fleet Map', path: '/transporter/fleet-map' },
-                    { icon: MapPin, label: 'Network Map', path: '/transporter/map' },
                     ...common
                 ];
             case 'distributor':
@@ -71,7 +69,6 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: Package, label: 'Inventory', path: '/distributor/inventory' },
                     { icon: Truck, label: 'Incoming', path: '/distributor/incoming' },
                     { icon: Mail, label: 'Purchase Requests', path: '/distributor/purchase-orders' },
-                    { icon: MapPin, label: 'Supply Map', path: '/distributor/map' },
                     ...common
                 ];
             case 'retailer':
@@ -81,7 +78,6 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: ClipboardList, label: 'Purchase Orders', path: '/retailer/purchase-orders' },
                     { icon: Store, label: 'My Products', path: '/retailer/products' },
                     { icon: BarChart3, label: 'Sales Records', path: '/retailer/sales' },
-                    { icon: MapPin, label: 'Supply Map', path: '/retailer/map' },
                     ...common
                 ];
             case 'admin':
@@ -91,7 +87,7 @@ const Sidebar = ({ isOpen, toggleSidebar, role = 'farmer' }) => {
                     { icon: Sprout, label: 'Batches', path: '/admin/batches' },
                     { icon: Truck, label: 'Shipments', path: '/admin/shipments' },
                     { icon: Truck, label: 'Fleet Hub', path: '/admin/fleet' },
-                    { icon: MapPin, label: 'Supply Map', path: '/admin/map' },
+                    { icon: MapPin, label: 'Ecosystem Map', path: '/admin/map' },
                     { icon: FileText, label: 'Approvals', path: '/admin/approvals' },
                     { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
                     ...common

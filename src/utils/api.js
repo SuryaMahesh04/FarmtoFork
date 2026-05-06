@@ -121,6 +121,10 @@ export const api = {
             method: 'PUT',
             body: JSON.stringify({ available })
         }),
+        assignWarehouse: (shipmentId, warehouseId) => api.request('/distributor/assign-warehouse', {
+            method: 'POST',
+            body: JSON.stringify({ shipmentId, warehouseId })
+        }),
     },
 
     // Retailer APIs

@@ -36,9 +36,11 @@ const LocationPickerModal = ({ isOpen, onClose, onConfirm, initialLocation = nul
                 setAddressInfo({
                     formattedAddress: data.display_name,
                     city: data.address.city || data.address.town || data.address.village || '',
+                    district: data.address.county || data.address.state_district || data.address.district || '',
                     state: data.address.state || '',
                     pincode: data.address.postcode || '',
-                    country: data.address.country || ''
+                    country: data.address.country || '',
+                    suburb: data.address.suburb || data.address.neighbourhood || ''
                 });
             }
         } catch (error) {

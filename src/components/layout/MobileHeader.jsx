@@ -1,20 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User as UserIcon } from 'lucide-react';
+import { Bell, User as UserIcon, X as CloseIcon, Package, MapPin, Check } from 'lucide-react';
 import logo from '../../assets/logo2.png';
 import { api, authHelpers } from '../../utils/api';
+import toast from 'react-hot-toast';
 
 const MobileHeader = ({ role }) => {
     const navigate = useNavigate();
     const [unreadCount, setUnreadCount] = useState(0);
+    const [showPopup, setShowPopup] = useState(false);
+    const [popupData, setPopupData] = useState(null);
+    const lastNotifiedId = useRef(localStorage.getItem('lastNotifiedId_mobile') || null);
 
-    // Fetch unread count from actual API
+    const handleAcceptShipment = async (shipmentId) => {
+        try {
+            const res = await api.shipment.updateStatus(shipmentId, 'accepted');
+            if (res.success) {
+                toast.success('Shipment accepted!');
+                setShowPopup(false);
+                // Refresh unread count
+                const countRes = await api.notification.getAll();
+                if (countRes.success) setUnreadCount(countRes.unreadCount);
+            }
+        } catch (error) {
+            toast.error(error.message || 'Failed to accept');
+        }
+    };
+
+    // Fetch unread count and latest notification from actual API
     useEffect(() => {
-        const fetchUnreadCount = async () => {
+        const fetchNotifications = async () => {
              if (!authHelpers.isAuthenticated()) return; // Only fetch if logged in
              try {
                  const res = await api.notification.getAll();
                  if (res.success) {
+                     const newest = res.data[0];
+                     if (newest && !newest.isRead && newest._id !== lastNotifiedId.current) {
+                         setPopupData(newest);
+                         setShowPopup(true);
+                         lastNotifiedId.current = newest._id;
+                         localStorage.setItem('lastNotifiedId_mobile', newest._id);
+                         setTimeout(() => setShowPopup(false), 6000);
+                     }
                      setUnreadCount(res.unreadCount);
                  }
              } catch (error) {
@@ -22,8 +49,8 @@ const MobileHeader = ({ role }) => {
              }
         };
         
-        fetchUnreadCount();
-        const interval = setInterval(fetchUnreadCount, 15000); // Polling every 15s
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 12000); // Polling every 12s
         return () => clearInterval(interval);
     }, []);
 
@@ -59,6 +86,64 @@ const MobileHeader = ({ role }) => {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
+                    {/* New Notification Popup - Mobile */}
+                    {showPopup && popupData && (
+                        <div className="absolute top-16 right-4 left-4 bg-white border border-emerald-100 shadow-2xl rounded-2xl p-4 animate-in slide-in-from-top-4 duration-300 z-[60]">
+                            <div className="flex flex-col gap-3">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex flex-col">
+                                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1 flex items-center gap-1">
+                                            <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            {popupData.type === 'shipment_request' ? 'Shipment Request' : 'New Alert'}
+                                        </p>
+                                        <p className="text-xs font-bold text-slate-800 truncate max-w-[200px]">
+                                            {popupData.type === 'shipment_request' && popupData.relatedId 
+                                                ? `Shipment ${popupData.relatedId.shipmentId || 'New'}`
+                                                : popupData.message}
+                                        </p>
+                                    </div>
+                                    <button onClick={() => setShowPopup(false)} className="text-slate-400 p-1">
+                                        <CloseIcon size={16} />
+                                    </button>
+                                </div>
+
+                                {popupData.type === 'shipment_request' && popupData.relatedId && (
+                                    <div className="bg-slate-50 rounded-xl p-2 space-y-1">
+                                        <p className="text-[10px] text-slate-600">
+                                            <span className="font-bold">Farmer:</span> {popupData.relatedId.farmer?.profile?.fullName || 'N/A'}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 flex items-center gap-1">
+                                            <MapPin size={10} /> {popupData.relatedId.farmer?.profile?.village}, {popupData.relatedId.farmer?.profile?.district}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-2">
+                                    {popupData.type === 'shipment_request' && popupData.relatedId && (
+                                        <button 
+                                            onClick={() => handleAcceptShipment(popupData.relatedId._id)}
+                                            className="flex-1 py-2 bg-emerald-600 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1"
+                                        >
+                                            <Check size={12} /> Accept
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={() => {
+                                            setShowPopup(false);
+                                            const path = popupData.type === 'shipment_request' 
+                                                ? `/${role}/shipment/${popupData.relatedId?._id || ''}`
+                                                : '/notifications';
+                                            navigate(path);
+                                        }}
+                                        className="flex-1 py-2 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg"
+                                    >
+                                        View
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Notifications */}
                     <button 
                         onClick={() => navigate('/notifications')}

@@ -49,6 +49,9 @@ const decryptBatch = (batchDoc) => {
             };
             b.isTampered = !cryptoEngine.verifySignature(payloadToSign, b.documentSignature);
         }
+        // Ensure unit is present for UI
+        if (!b.unit) b.unit = 'kg';
+        
         return b;
     } catch (err) {
         console.error('Decryption helper error:', err);
@@ -81,7 +84,7 @@ exports.getDashboardStats = async (req, res) => {
     try {
         const userId = req.user.id; // From auth middleware
 
-        // 1. Calculate Inventory Stats (Received Shipments)
+        // 1. Calculate Inventory Stats (Delivered Shipments/Batches)
         const inventoryShipments = await Shipment.find({
             distributor: userId,
             status: 'delivered'
@@ -93,9 +96,12 @@ exports.getDashboardStats = async (req, res) => {
 
         inventoryShipments.forEach(shipment => {
             if (shipment.batch) {
-                shipment.batch = decryptBatch(shipment.batch);
-                totalInventoryWeight += (shipment.batch.quantity || 0);
-                if (shipment.batch.qualityScore >= 80) { // Assuming 80 is pass threshold
+                // Important: Ensure we decrypt to get numeric quantity
+                const decryptedBatch = decryptBatch(shipment.batch);
+                const qty = Number(decryptedBatch.quantity) || 0;
+                totalInventoryWeight += qty;
+                
+                if (decryptedBatch.qualityScore >= 80) {
                     qualityPassedCount++;
                 } else {
                     qualityFailedCount++;
@@ -103,28 +109,33 @@ exports.getDashboardStats = async (req, res) => {
             }
         });
 
-        // Calculate percentages
-        const totalProcessed = qualityPassedCount + qualityFailedCount;
-        const qualityPassPercentage = totalProcessed > 0
-            ? Math.round((qualityPassedCount / totalProcessed) * 100)
-            : 0;
-
         // 2. Outgoing Shipments (acquired by retailers)
         const outgoingCount = await Batch.countDocuments({
-            distributorId: userId, // Assuming distributorId is tracked on batch during transit or receipt
+            distributorId: userId,
             retailerId: { $ne: null }
         });
 
-        // 3. Incoming Stats
+        // 3. Incoming Stats - Synchronized with all logistics phases
         const incomingCount = await Shipment.countDocuments({
             distributor: userId,
-            status: { $in: ['pending', 'accepted', 'assigned', 'in-transit'] }
+            status: { $in: ['pending', 'accepted', 'assigned', 'at_pickup', 'picked_up', 'in-transit', 'in_transit'] }
         });
 
-        // 4. Calculate Storage Utilization
-        const user = await User.findById(userId);
-        const capacity = user?.profile?.warehouseCapacity || 5000; // Default 5000kg if not set
-        const storageUsed = Math.min(Math.round((totalInventoryWeight / capacity) * 100), 100);
+        // 4. Calculate Storage Utilization from actual warehouses
+        const warehouses = await Warehouse.find({ owner: userId });
+        let totalCapacity = 0;
+        
+        if (warehouses.length > 0) {
+            totalCapacity = warehouses.reduce((sum, w) => sum + (Number(w.capacity) || 0), 0);
+        } else {
+            // Fallback to profile capacity or system default
+            const user = await User.findById(userId);
+            totalCapacity = Number(user?.profile?.warehouseCapacity) || 5000;
+        }
+
+        const storageUsed = totalCapacity > 0 
+            ? Math.min(Math.round((totalInventoryWeight / totalCapacity) * 100), 100)
+            : 0;
 
         // Count Pending POs
         const pendingPOs = await PurchaseOrder.countDocuments({
@@ -139,7 +150,7 @@ exports.getDashboardStats = async (req, res) => {
                 incomingBatches: incomingCount,
                 outgoingBatches: outgoingCount,
                 storageUsed: storageUsed,
-                capacity: capacity,
+                capacity: totalCapacity,
                 pendingPOs: pendingPOs
             }
         });
@@ -164,7 +175,7 @@ exports.getInventory = async (req, res) => {
             status: 'delivered'
         })
             .populate('batch')
-
+            .populate('warehouse')
             .sort({ updatedAt: -1 });
 
         const formattedInventory = inventory.map(item => {
@@ -196,7 +207,8 @@ exports.getInventory = async (req, res) => {
                 category: category,
                 stock: `${qty} ${shp.batch.unit || 'kg'}`,
                 availableForSale: !!shp.batch.availableForSale,
-                warehouse: category === 'Fruits' || category === 'Vegetables' ? 'Cold Storage (Zone A)' : (category === 'Grains' ? 'Dry Silos (Zone C)' : 'General Warehouse'),
+                warehouseId: shp.warehouse?._id || null,
+                warehouse: shp.warehouse?.name || (category === 'Fruits' || category === 'Vegetables' ? 'Cold Storage (Zone A)' : (category === 'Grains' ? 'Dry Silos (Zone C)' : 'General Warehouse')),
                 expiry: shp.batch.harvestDate ? new Date(new Date(shp.batch.harvestDate).setMonth(new Date(shp.batch.harvestDate).getMonth() + (category === 'Grains' ? 12 : 3))).toLocaleDateString() : 'N/A',
                 status: shp.batch.qualityScore >= 80 ? 'good' : (shp.batch.qualityScore >= 60 ? 'warning' : 'critical'),
                 quality: shp.batch.qualityScore || 0
@@ -223,7 +235,7 @@ exports.getIncoming = async (req, res) => {
 
         const incomingDocs = await Shipment.find({
             distributor: userId,
-            status: { $in: ['pending', 'accepted', 'in-transit'] }
+            status: { $in: ['pending', 'accepted', 'assigned', 'at_pickup', 'picked_up', 'in-transit'] }
         })
             .populate('farmer', 'profile.fullName profile.village')
             .populate('batch')
@@ -253,7 +265,7 @@ exports.getAnalytics = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // Inventory Trend - Aggregate delivered shipments weight by month
+        // 1. Inventory Trend - Aggregate delivered shipments weight by month
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -276,45 +288,81 @@ exports.getAnalytics = async (req, res) => {
 
         recentDeliveries.forEach(s => {
             if (s.batch) {
-                s.batch = decryptBatch(s.batch);
+                const decBatch = decryptBatch(s.batch);
+                const qty = Number(decBatch.quantity) || 0;
                 const m = monthNames[new Date(s.updatedAt).getMonth()];
                 if (trendMap.hasOwnProperty(m)) {
-                    trendMap[m] += s.batch.quantity;
+                    trendMap[m] += qty;
                 }
             }
         });
 
-        const user = await User.findById(userId);
-        const capacity = user?.profile?.warehouseCapacity || 5000;
+        // Dynamic capacity for trend lines
+        const warehouses = await Warehouse.find({ owner: userId });
+        let totalCapacity = 0;
+        if (warehouses.length > 0) {
+            totalCapacity = warehouses.reduce((sum, w) => sum + (Number(w.capacity) || 0), 0);
+        } else {
+            const user = await User.findById(userId);
+            totalCapacity = Number(user?.profile?.warehouseCapacity) || 5000;
+        }
 
         const inventoryTrendData = Object.keys(trendMap).map(m => ({
             month: m,
             stock: Math.round(trendMap[m]),
-            capacity: capacity
+            capacity: totalCapacity
         }));
 
-        // Product Category Distribution
-        const inventory = await Shipment.find({ distributor: userId, status: 'delivered' }).populate('batch');
-        const categoryMap = {};
+        // 2. Product Category Distribution
+        const allInventory = await Shipment.find({
+            distributor: userId,
+            status: 'delivered'
+        }).populate('batch');
+
+        const categoryMap = {
+            'Grains': 0,
+            'Vegetables': 0,
+            'Fruits': 0,
+            'Dairy': 0,
+            'Others': 0
+        };
+
         const qualityByCrop = {};
 
-        inventory.forEach(s => {
+        allInventory.forEach(s => {
             if (s.batch) {
-                const type = s.batch.crop;
-                categoryMap[type] = (categoryMap[type] || 0) + s.batch.quantity;
+                const decBatch = decryptBatch(s.batch);
+                const crop = decBatch.crop || '';
+                const qty = Number(decBatch.quantity) || 0;
+
+                // Category Mapping
+                const grains = ['Wheat', 'Rice', 'Maize', 'Millets', 'Ear'];
+                const vegetables = ['Tomato', 'Potato', 'Onion', 'Carrot', 'Spinach'];
+                const fruits = ['Apple', 'Mango', 'Banana', 'Orange', 'Grapes'];
+                const dairy = ['Milk', 'Paneer', 'Curd', 'Butter'];
+
+                let cat = 'Others';
+                if (grains.some(g => crop.includes(g))) cat = 'Grains';
+                else if (vegetables.some(v => crop.includes(v))) cat = 'Vegetables';
+                else if (fruits.some(f => crop.includes(f))) cat = 'Fruits';
+                else if (dairy.some(d => crop.includes(d))) cat = 'Dairy';
+
+                categoryMap[cat] += qty;
 
                 // Quality by Crop
-                if (!qualityByCrop[type]) qualityByCrop[type] = { passed: 0, failed: 0 };
-                if (s.batch.qualityScore >= 80) qualityByCrop[type].passed++;
-                else qualityByCrop[type].failed++;
+                if (!qualityByCrop[crop]) qualityByCrop[crop] = { passed: 0, failed: 0 };
+                if (decBatch.qualityScore >= 80) qualityByCrop[crop].passed++;
+                else qualityByCrop[crop].failed++;
             }
         });
 
-        const productCategoryData = Object.keys(categoryMap).map((key, index) => ({
-            name: key,
-            value: Math.round(categoryMap[key]),
-            color: ['#5c9449', '#f5deb3', '#b4d7e8', '#d4a574', '#cbd5e1'][index % 5]
-        }));
+        const productCategoryData = Object.keys(categoryMap)
+            .filter(cat => categoryMap[cat] > 0)
+            .map((key, index) => ({
+                name: key,
+                value: Math.round(categoryMap[key]),
+                color: ['#EAB308', '#22C55E', '#F97316', '#0EA5E9', '#94A3B8'][index % 5]
+            }));
 
         const qualityMetricsData = Object.keys(qualityByCrop).map(crop => ({
             category: crop,
@@ -332,7 +380,7 @@ exports.getAnalytics = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching specific analytics:', error);
+        console.error('Error fetching distributor analytics:', error);
         res.status(500).json({
             success: false,
             message: 'Server Error'
@@ -502,5 +550,42 @@ exports.markBatchForSale = async (req, res) => {
     } catch (error) {
         console.error('Publish batch error:', error);
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Assign warehouse to an incoming shipment
+exports.assignWarehouse = async (req, res) => {
+    try {
+        const { shipmentId, warehouseId } = req.body;
+        
+        const shipment = await Shipment.findById(shipmentId);
+        if (!shipment) return res.status(404).json({ success: false, message: 'Shipment not found' });
+        
+        if (shipment.distributor.toString() !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+
+        const warehouse = await Warehouse.findOne({ _id: warehouseId, distributor: req.user.id });
+        if (!warehouse) return res.status(404).json({ success: false, message: 'Warehouse not found' });
+
+        shipment.warehouse = warehouseId;
+        
+        // Add to journey/tracking
+        shipment.trackingUpdates.push({
+            status: shipment.status,
+            location: warehouse.name,
+            notes: `Assigned to warehouse: ${warehouse.name}`
+        });
+
+        await shipment.save();
+
+        res.json({
+            success: true,
+            message: `Shipment assigned to ${warehouse.name}`,
+            data: shipment
+        });
+    } catch (error) {
+        console.error('Assign warehouse error:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };

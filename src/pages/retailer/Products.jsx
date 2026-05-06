@@ -8,6 +8,9 @@ import Button from '../../components/ui/Button';
 import useMediaQuery from '../../utils/useMediaQuery';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import QRCode from 'react-qr-code';
+import Modal from '../../components/ui/Modal';
+import { Printer, QrCode as QrIcon } from 'lucide-react';
 
 const Products = () => {
     const isMobile = useMediaQuery('(max-width: 768px)');
@@ -18,6 +21,8 @@ const Products = () => {
     const [showAcquireModal, setShowAcquireModal] = useState(false);
     const [acquireBatchId, setAcquireBatchId] = useState('');
     const [acquiring, setAcquiring] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [showQRModal, setShowQRModal] = useState(false);
 
     const fetchProducts = async () => {
         try {
@@ -85,6 +90,68 @@ const Products = () => {
         }
     };
 
+    const handlePrint = () => {
+        if (!selectedProduct) return;
+
+        const qrContainer = document.getElementById('qr-code-print-container');
+        if (!qrContainer) return;
+
+        const qrSvg = qrContainer.innerHTML;
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+
+        if (!printWindow) {
+            toast.error('Please allow popups to print');
+            return;
+        }
+
+        const receiptHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Product QR - ${selectedProduct.id}</title>
+                <style>
+                    body { font-family: 'Courier New', monospace; padding: 20px; max-width: 300px; margin: 0 auto; background: white; text-align: center; }
+                    .header { margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px; }
+                    .title { font-size: 18px; font-weight: bold; display: block; }
+                    .content { margin-bottom: 15px; text-align: left; }
+                    .row { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 12px; }
+                    .label { font-weight: bold; }
+                    .qr-container { margin: 15px 0; }
+                    .footer { font-size: 10px; margin-top: 15px; border-top: 2px dashed #000; padding-top: 10px; }
+                    @media print { body { padding: 10px; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <span class="title">Farm2Fork Trace</span>
+                </div>
+                <div class="content">
+                    <div class="row"><span class="label">ID:</span> <span>${selectedProduct.id}</span></div>
+                    <div class="row"><span class="label">Product:</span> <span>${selectedProduct.name}</span></div>
+                    <div class="row"><span class="label">Stock:</span> <span>${selectedProduct.stock}</span></div>
+                </div>
+                <div class="qr-container">${qrSvg}</div>
+                <div class="footer">
+                    <p>Scan to verify authenticity</p>
+                    <p>Powered by Farm2Fork Blockchain</p>
+                </div>
+                <script>
+                    setTimeout(() => { window.print(); window.close(); }, 500);
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.open();
+        printWindow.document.write(receiptHtml);
+        printWindow.document.close();
+    };
+
+    const handleGetQR = (product) => {
+        setSelectedProduct(product);
+        setShowQRModal(true);
+    };
+
     const columns = [
         { header: 'Product ID', accessor: 'id' },
         { header: 'Product Name', accessor: 'name' },
@@ -106,10 +173,11 @@ const Products = () => {
                     <Button 
                         size="sm" 
                         variant="outline" 
-                        icon={Scan} 
-                        onClick={() => navigate(`/retailer/consumer-preview/${row._id}`)}
+                        icon={QrIcon} 
+                        onClick={() => handleGetQR(row)}
+                        className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
                     >
-                        Preview
+                        Get QR
                     </Button>
                 </div>
             )
@@ -258,6 +326,50 @@ const Products = () => {
                         </div>
                     </div>
                 )}
+
+                {/* QR Preview Modal */}
+                <Modal
+                    isOpen={showQRModal}
+                    onClose={() => setShowQRModal(false)}
+                    title="Product QR Code"
+                >
+                    <div className="flex flex-col items-center space-y-6">
+                        <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 flex flex-col items-center">
+                            <div id="qr-code-print-container" className="bg-white p-2 rounded-lg">
+                                <QRCode
+                                    value={`${window.location.origin}/trace/${selectedProduct?._id}`}
+                                    size={200}
+                                    level="H"
+                                />
+                            </div>
+                            <div className="mt-4 text-center">
+                                <p className="font-bold text-slate-800">{selectedProduct?.id}</p>
+                                <p className="text-xs text-slate-400 truncate w-48">{selectedProduct?.name}</p>
+                            </div>
+                        </div>
+
+                        <div className="w-full flex gap-3">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setShowQRModal(false)}
+                            >
+                                Close
+                            </Button>
+                            <Button
+                                className="flex-1 bg-emerald-600 text-white"
+                                icon={Printer}
+                                onClick={handlePrint}
+                            >
+                                Print QR
+                            </Button>
+                        </div>
+
+                        <p className="text-xs text-slate-400 text-center">
+                            Print this QR code and attach it to the product. Customers can scan it to verify the blockchain traceability and quality details.
+                        </p>
+                    </div>
+                </Modal>
             </div>
         </DashboardLayout>
     );
